@@ -3,11 +3,12 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { LensflareElement } from 'three/examples/jsm/objects/Lensflare.js';
+import { Planet } from '../Interface/PlanetInterface'
 
-const sunTexture = new THREE.TextureLoader().load('images/sun.jpeg');
-const lensFlareTexture = new THREE.TextureLoader().load('images/lens_flare.png');
 
-class Sun {
+const sunTexture = new THREE.TextureLoader().load('/assets/images/sun.jpeg');
+
+class Sun implements Planet{
     public name: string;
     public mass: number;
     public position: THREE.Vector3;
@@ -23,10 +24,10 @@ class Sun {
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
     private camera: THREE.PerspectiveCamera;
-    private mesh!: THREE.Mesh;
+    public mesh!: THREE.Mesh;
     private bloomComposer!: EffectComposer;
-    private lensflareElement: LensflareElement | null = null;
     static mass: number;
+    static position: number;
 
     constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.renderer = renderer;
@@ -64,8 +65,36 @@ class Sun {
 
         this.setupSun();
         this.setupBloom();
-        this.setupLensFlare();
     }
+    diameter!: number;
+    density!: number;
+    gravity!: number;
+    escapeVelocity!: number;
+    lengthOfDay!: number;
+    distanceFromSun!: number;
+    perihelion!: number;
+    aphelion!: number;
+    orbitalPeriod!: number;
+    orbitalVelocity!: number;
+    orbitalInclination!: number;
+    orbitalEccentricity!: number;
+    obliquityToOrbit!: number;
+    meanTemperature!: number;
+    surfacePressure!: number;
+    numberOfMoons!: number;
+    hasRingSystem!: boolean;
+    hasGlobalMagneticField!: boolean;
+    texture!: THREE.Texture;
+    semiMajorAxis!: number;
+    semiMinorAxis!: number;
+    eccentricity!: number;
+    meanAnomaly!: number;
+    centralBody!: number;
+    albedo?: number | undefined;
+    atmosphereScale?: number | undefined;
+    lightDirection?: THREE.Vector3 | undefined;
+    lastUpdateTime!: number;
+    solveKepler!: (M: number, e: number) => number;
 
     private setupSun() {
         this.mesh = new THREE.Mesh(
@@ -86,26 +115,6 @@ class Sun {
 
         this.bloomComposer.addPass(renderPass);
         this.bloomComposer.addPass(bloomPass);
-    }
-
-    private setupLensFlare() {
-        const sunMaterial = new THREE.SpriteMaterial({
-            map: sunTexture,
-            color: 0xffffff,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-        });
-
-        const sunSprite = new THREE.Sprite(sunMaterial);
-        sunSprite.scale.set(100, 100, 100);
-
-        this.lensflareElement = new LensflareElement(lensFlareTexture, 700, 0.5, new THREE.Color(0xffffff));
-
-        const sun = new THREE.Object3D();
-        sun.add(sunSprite);
- 
-
-        this.scene.add(sun);
     }
 
     public update() {

@@ -1,0 +1,45 @@
+import * as THREE from 'three';
+
+export interface Planet {
+    name: string;
+    position: THREE.Vector3;
+    velocity: THREE.Vector3;
+    mass: number;
+    radius: number;
+    diameter: number;
+    density: number;
+    gravity: number;
+    escapeVelocity: number;
+    rotationPeriod: number;
+    lengthOfDay: number;
+    distanceFromSun: number;
+    perihelion: number;
+    aphelion: number;
+    orbitalPeriod: number;
+    orbitalVelocity: number;
+    orbitalInclination: number;
+    orbitalEccentricity: number;
+    obliquityToOrbit: number;
+    meanTemperature: number;
+    surfacePressure: number;
+    numberOfMoons: number;
+    hasRingSystem: boolean;
+    hasGlobalMagneticField: boolean;
+    texture: THREE.Texture;
+    semiMajorAxis: number;
+    semiMinorAxis: number;
+    eccentricity: number;
+    meanAnomaly: number;
+    centralBody: number;
+    surfaceTemperature: number;
+    magneticField?: { polar: number; equatorial: number };
+    atmosphere?: { layers: { name: string; temperature: number; pressure: number }[] };
+    composition?: Record<string, number>;
+    albedo?: number;
+    atmosphereScale?: number;
+    lightDirection?: THREE.Vector3;
+    mesh: THREE.Mesh;
+    lastUpdateTime: number;
+    update: (dt: number) => void;
+    solveKepler: (M: number, e: number) => number;
+}

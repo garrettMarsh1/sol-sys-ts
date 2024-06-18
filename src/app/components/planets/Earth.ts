@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import Sun from './Sun';
+import { Planet } from '../Interface/PlanetInterface'
 
 const vertexShader = `
 precision highp float;
@@ -36,51 +37,8 @@ void main() {
 }
 `;
 
-const cloudVertexShader = `
-precision highp float;
-varying vec2 vUv;
-uniform float time;
 
-void main() {
-    vUv = uv;
-    vec3 transformed = vec3(position);
-    transformed.x += 0.1 * sin(2.0 * 3.14159 * time);
-    transformed.y += 0.1 * cos(2.0 * 3.14159 * time);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
-}
-`;
-
-const cloudFragmentShader = `
-precision highp float;
-uniform vec3 cloudColor;
-varying vec2 vUv;
-
-void main() {
-    gl_FragColor = vec4(cloudColor, 0.5);
-}
-`;
-
-const atmosphereVertexShader = `
-precision highp float;
-varying vec2 vUv;
-
-void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
-
-const atmosphereFragmentShader = `
-precision highp float;
-uniform vec3 atmosphereColor;
-varying vec2 vUv;
-
-void main() {
-    gl_FragColor = vec4(atmosphereColor, 0.5);
-}
-`;
-
-class Earth {
+class Earth implements Planet{
     public name: string;
     public position: THREE.Vector3;
     public velocity: THREE.Vector3;
@@ -106,7 +64,6 @@ class Earth {
     public hasGlobalMagneticField: boolean;
     public texture: THREE.Texture;
     public nightTexture: THREE.Texture;
-    public cloudTexture: THREE.Texture;
     public semiMajorAxis: number;
     public semiMinorAxis: number;
     public eccentricity: number;
@@ -118,9 +75,12 @@ class Earth {
     public earthParent: THREE.Object3D;
     public material: THREE.ShaderMaterial;
     public mesh: THREE.Mesh;
-    public cloudMesh: THREE.Mesh;
-    public atmosphereMesh: THREE.Mesh;
     public lastUpdateTime: number;
+    radius!: number;
+    composition?: Record<string, number> | undefined;
+    albedo?: number | undefined;
+    atmosphereScale?: number | undefined;
+    lightDirection?: THREE.Vector3 | undefined;
 
     constructor() {
         this.name = "Earth";
@@ -146,14 +106,13 @@ class Earth {
         this.numberOfMoons = 1; // unitless
         this.hasRingSystem = false; // boolean
         this.hasGlobalMagneticField = true; // boolean
-        this.texture = new THREE.TextureLoader().load('images/earth.jpeg');
-        this.nightTexture = new THREE.TextureLoader().load('images/8k_earth_nightmap.jpeg');
-        this.cloudTexture = new THREE.TextureLoader().load('images/earthClouds.jpeg');
+        this.texture = new THREE.TextureLoader().load('/assets/images/earth.jpeg');
+        this.nightTexture = new THREE.TextureLoader().load('/assets/images/8k_earth_nightmap.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
         this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.mass;
+        this.centralBody = Sun.position;
         this.surfaceTemperature = 288; // K
         this.rotationPeriod = 1; // days
         this.magneticField = {
@@ -202,46 +161,17 @@ class Earth {
         );
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
 
-        this.cloudMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.diameter / 2 + 2.1, 64, 64),
-            new THREE.ShaderMaterial({
-                vertexShader: cloudVertexShader,
-                fragmentShader: cloudFragmentShader,
-                uniforms: {
-                    cloudColor: { value: new THREE.Color(0x000000) }, // Black color for clouds
-                    time: { value: 0 }
-                },
-                transparent: true,
-                blending: THREE.NormalBlending
-            })
-        );
-        this.cloudMesh.position.set(this.position.x, this.position.y, this.position.z);
-
-        this.atmosphereMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.diameter / 2 + 5, 64, 64),
-            new THREE.ShaderMaterial({
-                vertexShader: atmosphereVertexShader,
-                fragmentShader: atmosphereFragmentShader,
-                uniforms: {
-                    atmosphereColor: { value: new THREE.Color(0xffc0cb) } // Pink color for the atmosphere
-                },
-                side: THREE.BackSide,
-                transparent: true,
-                blending: THREE.AdditiveBlending
-            })
-        );
-        this.atmosphereMesh.position.set(this.position.x, this.position.y, this.position.z);
+       
 
         this.earthParent = new THREE.Object3D();
         this.earthParent.add(this.mesh);
-        this.earthParent.add(this.cloudMesh);
-        this.earthParent.add(this.atmosphereMesh);
         this.earthParent.lookAt(new THREE.Vector3(10, 0, 0));
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
 
         this.lastUpdateTime = Date.now();
     }
+
 
     calculateForce() {
         const sunMass = Sun.mass;
@@ -275,11 +205,11 @@ class Earth {
 
         this.mesh.position.set(x, y, z);
         this.earthParent.position.set(x, y, z);
-        this.cloudMesh.position.set(x, y, z);
     }
 
     update() {
         this.calculateOrbit();
+        // console.log(this.mesh.position)
         this.material.uniforms.lightPos.value.set(0, 0, 0); // Ensure light position is set correctly
         this.mesh.rotation.y += (2 * Math.PI) / (24 * 60 * 60); // Full rotation in 24 hours
     }
