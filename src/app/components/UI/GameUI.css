@@ -411,3 +411,110 @@
   border: 1px solid rgba(64, 153, 255, 0.5);
   box-shadow: 0 0 5px rgba(64, 153, 255, 0.3);
 }
+
+/* Add these styles to src/app/components/UI/GameUI.css */
+
+/* Trajectory styles */
+.trajectory-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 50;
+}
+
+.trajectory-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(0, 255, 255, 0.7);
+  box-shadow: 0 0 10px 2px rgba(0, 255, 255, 0.5);
+  animation: trajectory-pulse 1.5s infinite ease-in-out;
+}
+
+.trajectory-indicator-line {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  height: 2px;
+  width: 40px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 255, 255, 0.7),
+    rgba(0, 255, 255, 0)
+  );
+  transform-origin: left center;
+}
+
+.trajectory-indicator-top {
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.trajectory-indicator-right {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.trajectory-indicator-bottom {
+  transform: translateX(-50%) rotate(135deg);
+}
+
+.trajectory-indicator-left {
+  transform: translateX(-50%) rotate(225deg);
+}
+
+@keyframes trajectory-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+}
+
+/* Enhance the progress bar for autopilot and warp */
+.progress-bar-autopilot {
+  height: 6px;
+  background-color: rgba(64, 153, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 6px 0;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.progress-bar-autopilot-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #60dfff, #00ffff);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+  transition: width 0.3s ease-out;
+}
+
+.progress-bar-warp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+  transition: width 0.3s ease-out;
+}
+
+/* Add a highlight effect for target selection */
+.selected-planet-highlight {
+  animation: target-highlight 2s ease-in-out;
+}
+
+@keyframes target-highlight {
+  0% {
+    box-shadow: 0 0 0px rgba(0, 255, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(0, 255, 255, 0);
+  }
+}

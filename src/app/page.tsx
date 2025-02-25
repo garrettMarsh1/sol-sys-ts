@@ -1,9 +1,21 @@
-// src/app/page.tsx
 "use client";
 
 import React, { useEffect } from "react";
-import MainScene from "./components/MainScene";
+import dynamic from "next/dynamic";
 import "./components/UI/GameUI.css";
+
+// Use dynamic import with ssr: false to only load MainScene component on the client side
+const MainScene = dynamic(() => import("./components/MainScene"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-screen bg-black text-white">
+      <div className="text-center">
+        <h2 className="text-2xl mb-4">Loading Solar System...</h2>
+        <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto"></div>
+      </div>
+    </div>
+  ),
+});
 
 const HomePage: React.FC = () => {
   // Add custom cursor via useEffect to avoid hydration issues
@@ -27,12 +39,6 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
-      {/* Optional loading animation */}
-      <div className="loading-overlay">
-        <div className="loading-spinner"></div>
-        <div className="loading-text">Initializing Solar System Simulation</div>
-      </div>
-
       <MainScene />
     </div>
   );

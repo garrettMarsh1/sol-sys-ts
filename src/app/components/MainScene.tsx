@@ -1,4 +1,5 @@
-// src/app/components/MainScene.tsx
+"use client"; // This marks the component as client-side only
+
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
@@ -104,10 +105,19 @@ const MainScene: React.FC = () => {
         cameraVelocity={{ x: 0, y: 0, z: cameraSpeed }}
         timeScale={timeScale}
         onSetTimeScale={handleSetTimeScale}
-        onToggleCameraMode={handleSetCameraMode}
+        onToggleCameraMode={(mode) => {
+          handleSetCameraMode(
+            mode === "orbit"
+              ? CameraMode.ORBIT
+              : mode === "follow"
+              ? CameraMode.FOLLOW
+              : CameraMode.FREE_FLIGHT
+          );
+        }}
         onWarpToPlanet={handleWarpToPlanet}
         onFollowPlanet={handleFollowPlanet}
         planets={planets}
+        rawPlanets={planets}
         cameraMode={
           cameraMode === CameraMode.ORBIT
             ? "orbit"
@@ -153,6 +163,7 @@ class MainWithAdvancedCamera {
   private container: HTMLDivElement;
   private timeScale: number = 1;
   private lastFrameTime: number = 0;
+  private isInitialized: boolean = false;
 
   // Callbacks for UI updates
   private callbacks: {
@@ -200,6 +211,7 @@ class MainWithAdvancedCamera {
     // Start animation loop
     this.lastFrameTime = performance.now();
     this.animate();
+    this.isInitialized = true;
   }
 
   /**
@@ -294,6 +306,11 @@ class MainWithAdvancedCamera {
     this.planets = planetClasses.map((PlanetClass) => {
       const planet = new PlanetClass(this.renderer, this.scene, this.camera);
 
+      // Initialize planet if it has an init method
+      if (typeof (planet as any).init === "function") {
+        (planet as any).init();
+      }
+
       // Set render order (Sun on top of other planets)
       if (PlanetClass === Sun) {
         planet.mesh.renderOrder = 1;
@@ -347,8 +364,10 @@ class MainWithAdvancedCamera {
   /**
    * Main animation loop
    */
-  animate() {
-    requestAnimationFrame(() => this.animate());
+  animate = () => {
+    if (!this.isInitialized) return;
+
+    requestAnimationFrame(this.animate);
 
     // Calculate delta time
     const currentTime = performance.now();
@@ -387,7 +406,7 @@ class MainWithAdvancedCamera {
     this.renderer.clear();
     this.normalComposer.render();
     this.bloomComposer.render();
-  }
+  };
 
   /**
    * Set the simulation time scale
@@ -448,7 +467,7 @@ class MainWithAdvancedCamera {
   /**
    * Handle window resize
    */
-  onWindowResize() {
+  onWindowResize = () => {
     if (this.camera) {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
@@ -462,14 +481,14 @@ class MainWithAdvancedCamera {
       this.normalComposer.setSize(window.innerWidth, window.innerHeight);
       this.bloomComposer.setSize(window.innerWidth, window.innerHeight);
     }
-  }
+  };
 
   /**
    * Clean up resources
    */
   dispose() {
     // Remove event listeners
-    window.removeEventListener("resize", this.onWindowResize.bind(this));
+    window.removeEventListener("resize", this.onWindowResize);
 
     // Clean up advanced camera
     this.advancedCamera.dispose();

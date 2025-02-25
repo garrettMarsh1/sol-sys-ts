@@ -10,6 +10,11 @@ interface CameraControlsUIProps {
   speed: number;
   autopilotProgress: number;
   warpProgress: number;
+  trajectoryInfo?: {
+    estimatedTime: number;
+    fuelRequired: number;
+    success: boolean;
+  } | null;
   onSetCameraMode: (mode: CameraMode) => void;
   onWarpToPlanet: (planetName: string) => void;
   onFollowPlanet: (planetName: string) => void;
