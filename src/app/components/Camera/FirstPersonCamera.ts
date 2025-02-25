@@ -102,7 +102,33 @@ export default class FirstPersonCamera {
     );
   }
 
+  // Modify the update method in FirstPersonCamera class
+
+  // Add this method to your FirstPersonCamera class
+  public setWarping(isWarping: boolean): void {
+    // Store warping state in a local property
+    (this as any).isWarping = isWarping;
+
+    // Also set a global flag for other components that might need to know
+    (window as any).isWarping = isWarping;
+
+    // If warping is enabled, immediately stop any velocity
+    if (isWarping) {
+      this.resetVelocity();
+    }
+  }
+
+  public getRotation(): THREE.Quaternion {
+    return this.rotation_.clone();
+  }
+
+  // Then modify your update method to check for this flag:
   update(timeElapsedS: number) {
+    // Skip updates if we're being controlled externally through warping
+    if ((this as any).isWarping || (window as any).isWarping) {
+      return;
+    }
+
     this.updateInput_();
     this.updateTranslation_(timeElapsedS);
     this.input_.update(timeElapsedS);
@@ -158,6 +184,10 @@ export default class FirstPersonCamera {
 
     // Always look at the target
     this.camera.lookAt(targetPosition);
+  }
+
+  public resetVelocity() {
+    this.velocity_.set(0, 0, 0);
   }
 
   private updateOrbitMode_(timeElapsedS: number) {

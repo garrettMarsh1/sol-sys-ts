@@ -17,6 +17,7 @@ interface GameHUDProps {
   onFollowPlanet: (planetName: string) => void;
   planets: any[];
   cameraMode: "fps" | "follow" | "orbit";
+  rawPlanets: any[];
 }
 
 const GameHUD: React.FC<GameHUDProps> = ({

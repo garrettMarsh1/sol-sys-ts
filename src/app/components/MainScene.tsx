@@ -1,7 +1,12 @@
 // src/app/components/MainScene.tsx
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import TWEEN from "@tweenjs/tween.js";
-import FirstPersonCamera from "./Camera/FirstPersonCamera";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+
+// Import planet classes
 import Sun from "./planets/Sun";
 import Mercury from "./planets/Mercury";
 import Venus from "./planets/Venus";
@@ -13,69 +18,80 @@ import Uranus from "./planets/Uranus";
 import Neptune from "./planets/Neptune";
 import Pluto from "./planets/Pluto";
 import Stars from "./stars/stars";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { useEffect, useRef, useState } from "react";
-import { Planet } from "./Interface/PlanetInterface";
 
-// Import UI components
+// Import camera and UI components
+import AdvancedSpaceCamera, { CameraMode } from "./Camera/AdvancedSpaceCamera";
+import CameraControlsUI from "./UI/CameraControlsUI";
 import GameHUD from "./UI/GameHud";
-
-const BLOOM_LAYER = 1;
+import { Planet } from "./Interface/PlanetInterface";
 
 const MainScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mainInstance = useRef<Main | null>(null);
+  const mainInstanceRef = useRef<MainWithAdvancedCamera | null>(null);
 
   // State for UI components
   const [currentPlanet, setCurrentPlanet] = useState<Planet | null>(null);
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 0 });
-  const [cameraVelocity, setCameraVelocity] = useState({ x: 0, y: 0, z: 0 });
+  const [cameraSpeed, setCameraSpeed] = useState(0);
   const [timeScale, setTimeScale] = useState(1);
-  const [cameraMode, setCameraMode] = useState<"fps" | "follow" | "orbit">(
-    "fps"
+  const [cameraMode, setCameraMode] = useState<CameraMode>(
+    CameraMode.FREE_FLIGHT
   );
   const [planets, setPlanets] = useState<Planet[]>([]);
+  const [autopilotProgress, setAutopilotProgress] = useState(0);
+  const [warpProgress, setWarpProgress] = useState(0);
 
   // Setup main game instance
   useEffect(() => {
     if (containerRef.current) {
-      mainInstance.current = new Main(
+      mainInstanceRef.current = new MainWithAdvancedCamera(
         containerRef.current,
-        setCurrentPlanet,
-        setCameraPosition,
-        setCameraVelocity,
-        setPlanets
+        {
+          onPlanetSelect: setCurrentPlanet,
+          onPositionUpdate: setCameraPosition,
+          onSpeedUpdate: setCameraSpeed,
+          onPlanetsLoaded: setPlanets,
+          onModeChange: setCameraMode,
+          onAutopilotProgressUpdate: setAutopilotProgress,
+          onWarpProgressUpdate: setWarpProgress,
+        }
       );
     }
 
     return () => {
-      mainInstance.current?.dispose();
+      mainInstanceRef.current?.dispose();
     };
   }, []);
 
   // Handle time scale changes
   const handleSetTimeScale = (scale: number) => {
     setTimeScale(scale);
-    mainInstance.current?.setTimeScale(scale);
+    mainInstanceRef.current?.setTimeScale(scale);
   };
 
   // Handle camera mode changes
-  const handleToggleCameraMode = (mode: "fps" | "follow" | "orbit") => {
-    setCameraMode(mode);
-    mainInstance.current?.setCameraMode(mode);
+  const handleSetCameraMode = (mode: CameraMode) => {
+    mainInstanceRef.current?.setCameraMode(mode);
   };
 
   // Handle warp to planet
   const handleWarpToPlanet = (planetName: string) => {
-    mainInstance.current?.warpToPlanet(planetName);
+    mainInstanceRef.current?.warpToPlanet(planetName);
   };
 
   // Handle follow planet
   const handleFollowPlanet = (planetName: string) => {
-    mainInstance.current?.followPlanet(planetName);
-    setCameraMode("follow");
+    mainInstanceRef.current?.followPlanet(planetName);
+  };
+
+  // Handle start autopilot
+  const handleStartAutopilot = () => {
+    mainInstanceRef.current?.startAutopilot();
+  };
+
+  // Handle cancel autopilot
+  const handleCancelAutopilot = () => {
+    mainInstanceRef.current?.cancelAutopilot();
   };
 
   return (
@@ -85,14 +101,35 @@ const MainScene: React.FC = () => {
       <GameHUD
         currentPlanet={currentPlanet}
         cameraPosition={cameraPosition}
-        cameraVelocity={cameraVelocity}
+        cameraVelocity={{ x: 0, y: 0, z: cameraSpeed }}
         timeScale={timeScale}
         onSetTimeScale={handleSetTimeScale}
-        onToggleCameraMode={handleToggleCameraMode}
+        onToggleCameraMode={handleSetCameraMode}
         onWarpToPlanet={handleWarpToPlanet}
         onFollowPlanet={handleFollowPlanet}
         planets={planets}
+        cameraMode={
+          cameraMode === CameraMode.ORBIT
+            ? "orbit"
+            : cameraMode === CameraMode.FOLLOW
+            ? "follow"
+            : "fps"
+        }
+      />
+
+      <CameraControlsUI
         cameraMode={cameraMode}
+        currentTarget={currentPlanet}
+        position={cameraPosition}
+        speed={cameraSpeed}
+        autopilotProgress={autopilotProgress}
+        warpProgress={warpProgress}
+        onSetCameraMode={handleSetCameraMode}
+        onWarpToPlanet={handleWarpToPlanet}
+        onFollowPlanet={handleFollowPlanet}
+        onStartAutopilot={handleStartAutopilot}
+        onCancelAutopilot={handleCancelAutopilot}
+        planets={planets}
       />
     </div>
   );
@@ -100,10 +137,10 @@ const MainScene: React.FC = () => {
 
 export default MainScene;
 
-class Main {
+class MainWithAdvancedCamera {
   private renderer!: THREE.WebGLRenderer;
   private camera!: THREE.PerspectiveCamera;
-  private fpsCamera!: FirstPersonCamera;
+  private advancedCamera!: AdvancedSpaceCamera;
   private scene!: THREE.Scene;
   private stars!: Stars;
   private planets: {
@@ -113,44 +150,41 @@ class Main {
   }[] = [];
   private normalComposer!: EffectComposer;
   private bloomComposer!: EffectComposer;
-  private objects_: THREE.Object3D[] = [];
   private container: HTMLDivElement;
-  private isFollowingPlanet: boolean = false;
-  private targetPlanet?: Planet;
-  private followOffset!: THREE.Vector3;
   private timeScale: number = 1;
-  private cameraMode: "fps" | "follow" | "orbit" = "fps";
   private lastFrameTime: number = 0;
 
-  // State update callbacks
-  private setCurrentPlanet: (planet: Planet | null) => void;
-  private setCameraPosition: (position: {
-    x: number;
-    y: number;
-    z: number;
-  }) => void;
-  private setCameraVelocity: (velocity: {
-    x: number;
-    y: number;
-    z: number;
-  }) => void;
-  private setPlanets: (planets: Planet[]) => void;
+  // Callbacks for UI updates
+  private callbacks: {
+    onPlanetSelect: (planet: Planet | null) => void;
+    onPositionUpdate: (position: { x: number; y: number; z: number }) => void;
+    onSpeedUpdate: (speed: number) => void;
+    onPlanetsLoaded: (planets: Planet[]) => void;
+    onModeChange: (mode: CameraMode) => void;
+    onAutopilotProgressUpdate: (progress: number) => void;
+    onWarpProgressUpdate: (progress: number) => void;
+  };
 
   constructor(
     container: HTMLDivElement,
-    setCurrentPlanet: (planet: Planet | null) => void,
-    setCameraPosition: (position: { x: number; y: number; z: number }) => void,
-    setCameraVelocity: (velocity: { x: number; y: number; z: number }) => void,
-    setPlanets: (planets: Planet[]) => void
+    callbacks: {
+      onPlanetSelect: (planet: Planet | null) => void;
+      onPositionUpdate: (position: { x: number; y: number; z: number }) => void;
+      onSpeedUpdate: (speed: number) => void;
+      onPlanetsLoaded: (planets: Planet[]) => void;
+      onModeChange: (mode: CameraMode) => void;
+      onAutopilotProgressUpdate: (progress: number) => void;
+      onWarpProgressUpdate: (progress: number) => void;
+    }
   ) {
     this.container = container;
-    this.setCurrentPlanet = setCurrentPlanet;
-    this.setCameraPosition = setCameraPosition;
-    this.setCameraVelocity = setCameraVelocity;
-    this.setPlanets = setPlanets;
+    this.callbacks = callbacks;
     this.init();
   }
 
+  /**
+   * Initialize the scene, camera, planets, and rendering pipeline
+   */
   init() {
     this.setupScene();
     this.setupRenderer();
@@ -158,241 +192,26 @@ class Main {
     this.setupLights();
     this.setupPlanets();
     this.setupStars();
-    this.setupEventListeners();
     this.setupPostProcessing();
 
     // Send initial planets data to React state
-    this.setPlanets(this.planets.map((p) => p.object));
+    this.callbacks.onPlanetsLoaded(this.planets.map((p) => p.object));
 
     // Start animation loop
     this.lastFrameTime = performance.now();
     this.animate();
   }
 
-  setupEventListeners() {
-    this.renderer.domElement.addEventListener("click", (event) => {
-      this.onMouseClick(event);
-    });
-
-    window.addEventListener("resize", () => {
-      this.fpsCamera.camera.aspect = window.innerWidth / window.innerHeight;
-      this.fpsCamera.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Add keyboard listener for ESC to exit follow/target mode
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        this.isFollowingPlanet = false;
-        this.fpsCamera.setFollowing(false);
-        this.targetPlanet = undefined;
-        this.setCurrentPlanet(null);
-      }
-    });
+  /**
+   * Set up the three.js scene
+   */
+  setupScene() {
+    this.scene = new THREE.Scene();
   }
 
-  onMouseClick(event: MouseEvent) {
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    const mouse = new THREE.Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
-    );
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, this.fpsCamera.camera);
-    const intersects = raycaster.intersectObjects(
-      this.planets.map((p) => p.mesh)
-    );
-
-    if (intersects.length > 0) {
-      const intersectedObject = intersects[0].object;
-      const planet = this.planets.find(
-        (p) =>
-          p.mesh === intersectedObject ||
-          (p.mesh instanceof THREE.Group &&
-            p.mesh.children.includes(intersectedObject))
-      );
-
-      if (planet) {
-        this.isFollowingPlanet = false;
-        this.fpsCamera.setFollowing(false);
-        this.targetPlanet = planet.object;
-        this.followOffset = new THREE.Vector3(
-          0,
-          planet.object.diameter * 5,
-          planet.object.diameter * 5
-        );
-
-        // Update UI state
-        this.setCurrentPlanet(planet.object);
-      }
-    }
-  }
-
-  warpToPlanet(planetName: string) {
-    console.log(`Attempting to warp to: ${planetName}`);
-    const planet = this.planets.find((p) => p.object.name === planetName);
-    if (planet) {
-      console.log(`Found planet: ${planet.object.name}`);
-
-      // Set as current target
-      this.targetPlanet = planet.object;
-      this.setCurrentPlanet(planet.object);
-
-      // Calculate positions (using diameter or radius, whichever is available)
-      const planetDiameter =
-        planet.object.diameter ||
-        (planet.object.radius ? planet.object.radius * 2 : 10000);
-      const planetPosition = planet.mesh.position.clone();
-
-      // Create an offset that places the camera at a good viewing distance
-      // Use a larger multiple for bigger planets
-      const distanceMultiplier = planetDiameter > 50000 ? 5 : 3;
-      const offset = new THREE.Vector3(
-        0,
-        planetDiameter * 0.5,
-        planetDiameter * distanceMultiplier
-      );
-      const targetPosition = planetPosition.clone().add(offset);
-
-      console.log(
-        `Planet position: ${planetPosition.x}, ${planetPosition.y}, ${planetPosition.z}`
-      );
-      console.log(
-        `Target position: ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`
-      );
-
-      // Stop following during warp
-      this.isFollowingPlanet = false;
-      this.fpsCamera.setFollowing(false);
-
-      // Ensure TWEEN is properly initialized
-      if (!TWEEN) {
-        console.error("TWEEN not available!");
-        return;
-      }
-
-      // Create a new tween for camera movement
-      // Use longer duration for more distant planets
-      const distance = this.fpsCamera.translation_.distanceTo(targetPosition);
-      const duration = Math.min(5000, 2000 + distance * 0.00001);
-
-      // Show visual feedback that warp is happening
-      // This could be a UI overlay or effect
-      document.body.classList.add("warping");
-
-      // Tween to new position with a dramatic curve
-      new TWEEN.Tween(this.fpsCamera.translation_)
-        .to(
-          { x: targetPosition.x, y: targetPosition.y, z: targetPosition.z },
-          duration
-        )
-        .easing(TWEEN.Easing.Exponential.InOut)
-        .onUpdate(() => {
-          // Keep camera looking at planet during tween
-          this.fpsCamera.camera.lookAt(planetPosition);
-        })
-        .onComplete(() => {
-          console.log(`Warp complete to: ${planet.object.name}`);
-          document.body.classList.remove("warping");
-
-          // Only start following if in follow mode
-          if (this.cameraMode === "follow") {
-            this.isFollowingPlanet = true;
-            this.fpsCamera.setFollowing(true);
-            this.fpsCamera.setTarget(planet.mesh);
-          }
-
-          // Add a small orbit adjustment at the end to get into a good viewing position
-          this.orbitAdjustment(planet.mesh, planetDiameter);
-        })
-        .start();
-    } else {
-      console.warn(`Planet not found: ${planetName}`);
-    }
-  }
-
-  orbitAdjustment(
-    targetMesh: THREE.Mesh | THREE.Group,
-    planetDiameter: number
-  ) {
-    const targetPosition = targetMesh.position.clone();
-    const cameraPosition = this.fpsCamera.translation_.clone();
-
-    const orbitRadius = planetDiameter * 3;
-    const angle = Math.random() * Math.PI * 0.25;
-
-    const x = targetPosition.x + Math.cos(angle) * orbitRadius;
-    const z = targetPosition.z + Math.sin(angle) * orbitRadius;
-    const y = targetPosition.y + orbitRadius * 0.2;
-
-    new TWEEN.Tween(this.fpsCamera.translation_)
-      .to({ x, y, z }, 1000)
-      .easing(TWEEN.Easing.Quadratic.InOut)
-      .onUpdate(() => {
-        this.fpsCamera.camera.lookAt(targetPosition);
-      })
-      .start();
-  }
-
-  followPlanet(planetName: string) {
-    console.log(`Attempting to follow: ${planetName}`);
-    const planet = this.planets.find((p) => p.object.name === planetName);
-    if (planet) {
-      console.log(`Setting up follow mode for: ${planet.object.name}`);
-
-      // Set planet as target
-      this.targetPlanet = planet.object;
-
-      // Enable following
-      this.isFollowingPlanet = true;
-      this.fpsCamera.setFollowing(true);
-      this.fpsCamera.setTarget(planet.mesh);
-
-      // Make sure we're in follow mode
-      this.cameraMode = "follow";
-
-      // Calculate a good following distance based on planet size
-      const planetDiameter =
-        planet.object.diameter ||
-        (planet.object.radius ? planet.object.radius * 2 : 10000);
-      this.followOffset = new THREE.Vector3(
-        0,
-        planetDiameter * 0.3,
-        planetDiameter * 2
-      );
-
-      // Update UI state
-      this.setCurrentPlanet(planet.object);
-
-      console.log(`Now following: ${planet.object.name}`);
-    } else {
-      console.warn(`Planet not found for follow: ${planetName}`);
-    }
-  }
-
-  setTimeScale(scale: number) {
-    this.timeScale = scale;
-  }
-
-  setCameraMode(mode: "fps" | "follow" | "orbit") {
-    this.cameraMode = mode;
-
-    if (mode === "follow" && this.targetPlanet) {
-      const planet = this.planets.find(
-        (p) => p.object.name === this.targetPlanet!.name
-      );
-      if (planet) {
-        this.isFollowingPlanet = true;
-        this.fpsCamera.setFollowing(true);
-        this.fpsCamera.setTarget(planet.mesh);
-      }
-    } else {
-      this.isFollowingPlanet = false;
-      this.fpsCamera.setFollowing(false);
-    }
-  }
-
+  /**
+   * Set up the WebGL renderer
+   */
   setupRenderer() {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -405,58 +224,59 @@ class Main {
     this.container.appendChild(this.renderer.domElement);
   }
 
+  /**
+   * Set up the camera and advanced camera controller
+   */
   setupCamera() {
     this.camera = new THREE.PerspectiveCamera(
-      105,
+      75,
       window.innerWidth / window.innerHeight,
       1,
-      1e10
+      1e12
     );
-    this.camera.position.set(1e8, 3e7, 3e7);
-    this.fpsCamera = new FirstPersonCamera(this.camera, this.objects_);
-  }
 
-  setupScene() {
-    this.scene = new THREE.Scene();
-  }
-
-  setupStars() {
-    this.stars = new Stars(this.scene, this.renderer, this.fpsCamera.camera);
-  }
-
-  setupPostProcessing() {
-    this.normalComposer = new EffectComposer(this.renderer);
-    const normalRenderPass = new RenderPass(this.scene, this.fpsCamera.camera);
-    normalRenderPass.clear = true;
-    this.normalComposer.addPass(normalRenderPass);
-
-    this.bloomComposer = new EffectComposer(this.renderer);
-    const bloomRenderPass = new RenderPass(this.scene, this.fpsCamera.camera);
-    bloomRenderPass.clear = true;
-    this.bloomComposer.addPass(bloomRenderPass);
-
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      1.0,
-      0.4,
-      0.85
+    // Initialize the advanced camera system
+    this.advancedCamera = new AdvancedSpaceCamera(
+      this.camera,
+      [], // Will be populated after planets are created
+      new THREE.Vector3(1.5e8, 5e7, 5e7), // Starting position
+      {
+        onModeChange: (mode) => this.callbacks.onModeChange(mode),
+        onTargetChange: (target) => this.callbacks.onPlanetSelect(target),
+        onPositionChange: (position) =>
+          this.callbacks.onPositionUpdate({
+            x: position.x,
+            y: position.y,
+            z: position.z,
+          }),
+        onSpeedChange: (speed) => this.callbacks.onSpeedUpdate(speed),
+      }
     );
-    bloomPass.threshold = 0.0;
-    bloomPass.strength = 1;
-    bloomPass.radius = 0.5;
-    bloomPass.clear = true;
-    this.bloomComposer.addPass(bloomPass);
-
-    // Ensure all layers are enabled after setup
-    this.fpsCamera.camera.layers.enableAll();
   }
 
+  /**
+   * Set up scene lighting
+   */
   setupLights() {
-    const directionalLight = new THREE.PointLight(0xffffff, 0.4);
+    const directionalLight = new THREE.PointLight(0xffffff, 0.8);
     directionalLight.position.set(0, 0, 0);
     this.scene.add(directionalLight);
+
+    // Add ambient light for better visibility
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+    this.scene.add(ambientLight);
   }
 
+  /**
+   * Create star background
+   */
+  setupStars() {
+    this.stars = new Stars(this.scene, this.renderer, this.camera);
+  }
+
+  /**
+   * Set up planets and moons
+   */
   setupPlanets() {
     const planetClasses = [
       Sun,
@@ -470,95 +290,193 @@ class Main {
       Neptune,
       Pluto,
     ];
+
     this.planets = planetClasses.map((PlanetClass) => {
-      const planet = new PlanetClass(
-        this.renderer,
-        this.scene,
-        this.fpsCamera.camera
-      );
+      const planet = new PlanetClass(this.renderer, this.scene, this.camera);
+
+      // Set render order (Sun on top of other planets)
       if (PlanetClass === Sun) {
-        planet.mesh.renderOrder = 1; // Render the Sun on top of other meshes
+        planet.mesh.renderOrder = 1;
       } else {
-        planet.mesh.renderOrder = 0; // Default render order for other planets
+        planet.mesh.renderOrder = 0;
       }
+
+      // Add to scene
       this.scene.add(planet.mesh);
+
+      // Return planet data
       return {
         object: planet,
         update: planet.update.bind(planet),
         mesh: planet.mesh,
       };
     });
+
+    // Update the advanced camera with the created planets
+    this.advancedCamera.setPlanets(this.planets.map((p) => p.object));
   }
 
+  /**
+   * Set up post-processing effects
+   */
+  setupPostProcessing() {
+    // Normal render pass
+    this.normalComposer = new EffectComposer(this.renderer);
+    const normalRenderPass = new RenderPass(this.scene, this.camera);
+    normalRenderPass.clear = true;
+    this.normalComposer.addPass(normalRenderPass);
+
+    // Bloom pass for sun and bright objects
+    this.bloomComposer = new EffectComposer(this.renderer);
+    const bloomRenderPass = new RenderPass(this.scene, this.camera);
+    bloomRenderPass.clear = true;
+    this.bloomComposer.addPass(bloomRenderPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.0, // Bloom strength
+      0.4, // Bloom radius
+      0.85 // Bloom threshold
+    );
+    this.bloomComposer.addPass(bloomPass);
+
+    // Enable all layers for camera
+    this.camera.layers.enableAll();
+  }
+
+  /**
+   * Main animation loop
+   */
   animate() {
     requestAnimationFrame(() => this.animate());
 
     // Calculate delta time
     const currentTime = performance.now();
-    const dt = (currentTime - this.lastFrameTime) / 1000; // Convert to seconds
+    const deltaTime = Math.min((currentTime - this.lastFrameTime) / 1000, 0.1); // Cap to 100ms
     this.lastFrameTime = currentTime;
-
-    // Apply time scale
-    const scaledDt = dt * this.timeScale;
 
     // Skip updates if paused
     if (this.timeScale !== 0) {
+      // Calculate scaled delta for planet movements
+      const scaledDelta = deltaTime * this.timeScale;
+
       // Update planets
-      this.planets.forEach((planet) => planet.update(scaledDt));
+      this.planets.forEach((planet) => planet.update(scaledDelta));
     }
 
-    // Camera updates don't depend on time scale
-    this.fpsCamera.update(dt);
+    // Update camera (always uses real delta time, not scaled)
+    this.advancedCamera.update(deltaTime);
 
-    // Handle planet following
-    if (this.isFollowingPlanet && this.targetPlanet) {
-      const planet = this.planets.find(
-        (p) => p.object.name === this.targetPlanet!.name
+    // Update autopilot and warp progress for UI
+    if (this.advancedCamera.isAutopilotActive()) {
+      this.callbacks.onAutopilotProgressUpdate(
+        this.advancedCamera.getAutopilotProgress()
       );
-      if (planet) {
-        const planetPosition = planet.mesh.position.clone();
-        if (this.cameraMode === "follow") {
-          // Follow mode already handled by FirstPersonCamera
-        } else if (this.cameraMode === "orbit") {
-          // Orbit mode - circle around the planet
-          const orbitRadius = planet.object.diameter * 5;
-          const orbitSpeed = 0.1;
-          const angle = currentTime * 0.0005;
-
-          const x = planetPosition.x + Math.cos(angle) * orbitRadius;
-          const z = planetPosition.z + Math.sin(angle) * orbitRadius;
-          const y = planetPosition.y + orbitRadius * 0.5;
-
-          this.fpsCamera.translation_.set(x, y, z);
-          this.fpsCamera.camera.lookAt(planetPosition);
-        }
-      }
     }
 
-    // Update UI state with camera data
-    this.setCameraPosition({
-      x: this.fpsCamera.translation_.x,
-      y: this.fpsCamera.translation_.y,
-      z: this.fpsCamera.translation_.z,
-    });
+    if (this.advancedCamera.isWarpActive()) {
+      this.callbacks.onWarpProgressUpdate(
+        this.advancedCamera.getWarpProgress()
+      );
+    }
 
-    // Use a simplified velocity for UI
-    this.setCameraVelocity({
-      x: Math.random() * 0.1, // Replace with actual velocity when available
-      y: Math.random() * 0.1,
-      z: Math.random() * 0.1,
-    });
-
+    // Update TWEEN animations
     TWEEN.update();
+
+    // Render scene
     this.renderer.clear();
     this.normalComposer.render();
     this.bloomComposer.render();
   }
 
+  /**
+   * Set the simulation time scale
+   */
+  setTimeScale(scale: number) {
+    this.timeScale = scale;
+  }
+
+  /**
+   * Set camera mode
+   */
+  setCameraMode(mode: CameraMode) {
+    switch (mode) {
+      case CameraMode.FREE_FLIGHT:
+        this.advancedCamera.cancelAllAutomatedMovement();
+        break;
+      case CameraMode.ORBIT:
+        this.advancedCamera.startOrbit();
+        break;
+      case CameraMode.FOLLOW:
+        this.advancedCamera.startFollow();
+        break;
+    }
+  }
+
+  /**
+   * Warp to a planet by name
+   */
+  warpToPlanet(planetName: string) {
+    this.advancedCamera.warpToPlanet(planetName);
+  }
+
+  /**
+   * Follow a planet by name
+   */
+  followPlanet(planetName: string) {
+    const planet = this.planets.find((p) => p.object.name === planetName);
+    if (planet) {
+      this.advancedCamera.setTarget(planet.object);
+      this.advancedCamera.startFollow();
+    }
+  }
+
+  /**
+   * Start autopilot to current target
+   */
+  startAutopilot() {
+    this.advancedCamera.startAutopilot();
+  }
+
+  /**
+   * Cancel autopilot
+   */
+  cancelAutopilot() {
+    this.advancedCamera.cancelAutopilot();
+  }
+
+  /**
+   * Handle window resize
+   */
+  onWindowResize() {
+    if (this.camera) {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+    }
+
+    if (this.renderer) {
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    if (this.normalComposer && this.bloomComposer) {
+      this.normalComposer.setSize(window.innerWidth, window.innerHeight);
+      this.bloomComposer.setSize(window.innerWidth, window.innerHeight);
+    }
+  }
+
+  /**
+   * Clean up resources
+   */
   dispose() {
-    // Cleanup if needed
-    window.removeEventListener("resize", () => {});
-    this.renderer.domElement.removeEventListener("click", () => {});
-    document.removeEventListener("keydown", () => {});
+    // Remove event listeners
+    window.removeEventListener("resize", this.onWindowResize.bind(this));
+
+    // Clean up advanced camera
+    this.advancedCamera.dispose();
+
+    // Clean up renderer
+    if (this.renderer && this.container.contains(this.renderer.domElement)) {
+      this.container.removeChild(this.renderer.domElement);
+    }
   }
 }

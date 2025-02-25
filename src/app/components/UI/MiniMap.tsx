@@ -1,5 +1,6 @@
-// src/app/components/UI/HolographicMiniMap.tsx
-import React, { useRef, useEffect } from "react";
+// In src/app/components/UI/MiniMap.tsx:
+
+import React, { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 
 interface HolographicMiniMapProps {
@@ -23,12 +24,15 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   const planetMeshesRef = useRef<Record<string, THREE.Mesh>>({});
   const orbitLinesRef = useRef<THREE.Line[]>([]);
   const cameraMarkerRef = useRef<THREE.Mesh | null>(null);
-  const rotationSpeedRef = useRef<number>(0.001);
-  const isRotatingRef = useRef<boolean>(true);
+  // Remove rotation by default
+  const isRotatingRef = useRef<boolean>(false);
   const isDraggingRef = useRef<boolean>(false);
   const previousMousePositionRef = useRef<{ x: number; y: number } | null>(
     null
   );
+
+  // State for expanded view
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   // Planet colors - using vibrant, game-like colors
   const planetColors: Record<string, string> = {
@@ -43,6 +47,39 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     Neptune: "#0000ff",
     Pluto: "#964b00",
   };
+
+  // Add keydown event listener for expanded view toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Command+M or Control+M
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setIsExpanded((prev) => !prev);
+
+        // Need to resize renderer when expanding/collapsing
+        if (rendererRef.current && containerRef.current) {
+          setTimeout(() => {
+            if (
+              rendererRef.current &&
+              containerRef.current &&
+              cameraRef.current
+            ) {
+              const width = containerRef.current.clientWidth;
+              const height = containerRef.current.clientHeight;
+              rendererRef.current.setSize(width, height);
+              cameraRef.current.aspect = width / height;
+              cameraRef.current.updateProjectionMatrix();
+            }
+          }, 0);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   // Set up and clean up Three.js scene
   useEffect(() => {
@@ -101,7 +138,6 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     // Add grid lines
     const gridHelper = new THREE.GridHelper(800, 20, 0x2e78d4, 0x2e78d4);
     gridHelper.position.y = -19;
-    // Make grid lines glow
     gridHelper.material = new THREE.LineBasicMaterial({
       color: 0x3498db,
       transparent: true,
@@ -124,30 +160,29 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     scene.add(cameraMarker);
     cameraMarkerRef.current = cameraMarker;
 
-    // Animate function
+    // Animation loop
     const animate = () => {
       if (!sceneRef.current || !cameraRef.current || !rendererRef.current)
         return;
 
-      // Rotate the scene if not dragging
       if (isRotatingRef.current && !isDraggingRef.current) {
-        sceneRef.current.rotation.y += rotationSpeedRef.current;
+        sceneRef.current.rotation.y += 0.001;
       }
-
       rendererRef.current.render(sceneRef.current, cameraRef.current);
       requestRef.current = requestAnimationFrame(animate);
     };
-
-    // Start animation
     requestRef.current = requestAnimationFrame(animate);
+
+    // New ref for storing initial click position
+    const initialClickPositionRef = {
+      current: null as { x: number; y: number } | null,
+    };
 
     // Event handlers for mouse interaction
     const handleMouseDown = (e: MouseEvent) => {
       isDraggingRef.current = true;
-      previousMousePositionRef.current = {
-        x: e.clientX,
-        y: e.clientY,
-      };
+      initialClickPositionRef.current = { x: e.clientX, y: e.clientY };
+      previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -157,14 +192,8 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         sceneRef.current
       ) {
         const deltaX = e.clientX - previousMousePositionRef.current.x;
-
-        // Rotate the scene based on mouse movement
         sceneRef.current.rotation.y += deltaX * 0.01;
-
-        previousMousePositionRef.current = {
-          x: e.clientX,
-          y: e.clientY,
-        };
+        previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
       }
     };
 
@@ -176,53 +205,48 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       isDraggingRef.current = false;
     };
 
-    // Add event listeners
-    const currentContainer = containerRef.current;
-    currentContainer.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    currentContainer.addEventListener("mouseleave", handleMouseLeave);
-
-    // Click handler for selecting planets
-    // Click handler for selecting planets
-    // Click handler for selecting planets
     const handleClick = (event: MouseEvent) => {
-      if (isDraggingRef.current) return; // Don't select if dragging
+      if (initialClickPositionRef.current) {
+        const dx = event.clientX - initialClickPositionRef.current.x;
+        const dy = event.clientY - initialClickPositionRef.current.y;
+        const dragDistance = Math.sqrt(dx * dx + dy * dy);
+        if (dragDistance > 5) {
+          initialClickPositionRef.current = null;
+          return;
+        }
+      }
+      initialClickPositionRef.current = null;
 
       if (!cameraRef.current || !rendererRef.current || !sceneRef.current)
         return;
 
       console.log("MiniMap clicked");
+      if (!containerRef.current) return;
 
-      // Get container bounds
-      const rect = currentContainer.getBoundingClientRect();
-
-      // Calculate normalized device coordinates
+      const rect = containerRef.current.getBoundingClientRect();
       const mouse = new THREE.Vector2(
         ((event.clientX - rect.left) / rect.width) * 2 - 1,
         -((event.clientY - rect.top) / rect.height) * 2 + 1
       );
-
-      // Raycasting to find intersected objects
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(mouse, cameraRef.current);
 
-      // Get all planet meshes for intersection test
       const planetMeshes = Object.values(planetMeshesRef.current);
       console.log(
         "Available planets for selection:",
         Object.keys(planetMeshesRef.current)
       );
 
-      // Make sure we're testing against all meshes
+      // Get all intersections
       const intersects = raycaster.intersectObjects(planetMeshes, true);
-
       if (intersects.length > 0) {
-        console.log("Intersection found:", intersects[0]);
-        const intersectedObject = intersects[0].object as THREE.Mesh;
-
-        // Find which planet this mesh belongs to
-        // We need to check both direct matches and parent/child relationships
+        // If the first intersection is the Sun, try to use the next one
+        let chosenIntersection = intersects[0];
+        if (chosenIntersection.object.name === "Sun" && intersects.length > 1) {
+          chosenIntersection = intersects[1];
+        }
+        console.log("Intersection found:", chosenIntersection);
+        const intersectedObject = chosenIntersection.object as THREE.Mesh;
         let planetName = Object.keys(planetMeshesRef.current).find((name) => {
           const mesh = planetMeshesRef.current[name];
           return (
@@ -231,9 +255,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
               mesh.children.includes(intersectedObject))
           );
         });
-
         if (!planetName) {
-          // Try to find by traversing up the parent chain
           let parent = intersectedObject.parent;
           while (parent && !planetName) {
             planetName = Object.keys(planetMeshesRef.current).find(
@@ -242,7 +264,6 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
             parent = parent?.parent || null;
           }
         }
-
         if (planetName) {
           console.log("Selected planet:", planetName);
           const selectedPlanet = planets.find((p) => p.name === planetName);
@@ -256,18 +277,20 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       }
     };
 
+    const currentContainer = containerRef.current;
+    currentContainer.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    currentContainer.addEventListener("mouseleave", handleMouseLeave);
     currentContainer.addEventListener("click", handleClick);
 
-    // Clean up
     return () => {
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
-
       if (rendererRef.current && containerRef.current) {
         containerRef.current.removeChild(rendererRef.current.domElement);
       }
-
       currentContainer.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
@@ -299,6 +322,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         emissiveIntensity: 1,
       });
       const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+      sunMesh.name = "Sun";
       sceneRef.current.add(sunMesh);
       planetMeshesRef.current["Sun"] = sunMesh;
 
@@ -323,7 +347,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         planet.name === "Sun"
           ? 15
           : (planet.radius || planet.diameter / 2 || 5) * scale * 50; // Scale up to make visible
-      const scaledSize = Math.max(3, Math.min(10, planetSize)); // Clamp size
+      const scaledSize = Math.max(5, Math.min(12, planetSize)); // Slightly larger for better visibility
 
       // Create orbit path
       const orbitPath = new THREE.EllipseCurve(
@@ -367,10 +391,32 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           emissiveIntensity: 0.2,
         });
         const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+        planetMesh.name = planet.name;
+
+        // Make planet meshes slightly bigger for easier clicking
+        const hitboxGeometry = new THREE.SphereGeometry(scaledSize * 1.5, 8, 8);
+        const hitboxMaterial = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0,
+        });
+        const hitbox = new THREE.Mesh(hitboxGeometry, hitboxMaterial);
+        hitbox.name = `${planet.name}-hitbox`;
+        planetMesh.add(hitbox);
+
         if (sceneRef.current) {
           sceneRef.current.add(planetMesh);
         }
         planetMeshesRef.current[planet.name] = planetMesh;
+
+        // Add label for each planet
+        const labelDiv = document.createElement("div");
+        labelDiv.className = "planet-label";
+        labelDiv.textContent = planet.name;
+
+        const label = new CSS2DObject(labelDiv);
+        label.position.set(0, scaledSize * 1.5, 0);
+        planetMesh.add(label);
 
         // Add glow effect for highlighted planets
         if (currentPlanet && planet.name === currentPlanet.name) {
@@ -412,6 +458,17 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       // Highlight current planet
       if (currentPlanet && planet.name === currentPlanet.name) {
         planetMesh.scale.set(1.5, 1.5, 1.5);
+
+        // Add a pulsing effect to the current planet
+        const pulse = () => {
+          if (planetMesh && sceneRef.current) {
+            const scale = 1.5 + Math.sin(Date.now() * 0.005) * 0.2;
+            planetMesh.scale.set(scale, scale, scale);
+          }
+        };
+
+        pulse();
+        requestAnimationFrame(pulse);
       } else {
         planetMesh.scale.set(1, 1, 1);
       }
@@ -447,34 +504,75 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   }, [planets, currentPlanet, cameraPosition, planetColors]);
 
   return (
-    <div className="absolute top-16 right-4 pointer-events-auto">
-      <div className="game-panel minimap-panel">
+    <div
+      className={`absolute ${
+        isExpanded ? "inset-0 z-50 bg-black bg-opacity-80" : "top-16 right-4"
+      } pointer-events-auto transition-all duration-300`}
+    >
+      <div
+        className={`game-panel minimap-panel ${
+          isExpanded ? "w-full h-full max-w-none" : ""
+        }`}
+      >
         <div className="game-panel-header">
           <div className="game-panel-title">System Map</div>
-          <div className="game-panel-controls">
+          <div className="game-panel-controls flex space-x-2">
             <button
               onClick={() => {
                 isRotatingRef.current = !isRotatingRef.current;
               }}
               className="game-panel-button"
+              title={
+                isRotatingRef.current ? "Pause rotation" : "Resume rotation"
+              }
             >
               {isRotatingRef.current ? "⏸️" : "▶️"}
+            </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="game-panel-button"
+              title={isExpanded ? "Minimize map" : "Expand map"}
+            >
+              {isExpanded ? "⬇️" : "⬆️"}
             </button>
           </div>
         </div>
         <div
           ref={containerRef}
           className="holographic-map"
-          style={{ width: "240px", height: "240px" }}
+          style={{
+            width: isExpanded ? "calc(100% - 4px)" : "240px",
+            height: isExpanded ? "calc(100% - 60px)" : "240px",
+          }}
         />
         <div className="game-panel-footer">
           <div className="text-xs text-cyan-400">
-            Drag to rotate • Click to target
+            Drag to rotate • Click to target •{" "}
+            {isExpanded
+              ? "Press Cmd/Ctrl+M to minimize"
+              : "Press Cmd/Ctrl+M to expand"}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+class CSS2DObject extends THREE.Object3D {
+  element: HTMLDivElement;
+
+  constructor(element: HTMLDivElement) {
+    super();
+    this.element = element;
+    this.element.style.position = "absolute";
+    this.element.style.fontSize = "10px";
+    this.element.style.color = "#ffffff";
+    this.element.style.textShadow = "0 0 3px rgba(0,0,0,0.8)";
+    this.element.style.pointerEvents = "none";
+    this.element.style.textAlign = "center";
+    this.element.style.width = "100px";
+    this.element.style.marginLeft = "-50px";
+  }
+}
 
 export default HolographicMiniMap;
