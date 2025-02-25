@@ -184,11 +184,15 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     currentContainer.addEventListener("mouseleave", handleMouseLeave);
 
     // Click handler for selecting planets
+    // Click handler for selecting planets
+    // Click handler for selecting planets
     const handleClick = (event: MouseEvent) => {
       if (isDraggingRef.current) return; // Don't select if dragging
 
       if (!cameraRef.current || !rendererRef.current || !sceneRef.current)
         return;
+
+      console.log("MiniMap clicked");
 
       // Get container bounds
       const rect = currentContainer.getBoundingClientRect();
@@ -205,22 +209,50 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
       // Get all planet meshes for intersection test
       const planetMeshes = Object.values(planetMeshesRef.current);
-      const intersects = raycaster.intersectObjects(planetMeshes);
+      console.log(
+        "Available planets for selection:",
+        Object.keys(planetMeshesRef.current)
+      );
+
+      // Make sure we're testing against all meshes
+      const intersects = raycaster.intersectObjects(planetMeshes, true);
 
       if (intersects.length > 0) {
+        console.log("Intersection found:", intersects[0]);
         const intersectedObject = intersects[0].object as THREE.Mesh;
 
         // Find which planet this mesh belongs to
-        const planetName = Object.keys(planetMeshesRef.current).find(
-          (name) => planetMeshesRef.current[name] === intersectedObject
-        );
+        // We need to check both direct matches and parent/child relationships
+        let planetName = Object.keys(planetMeshesRef.current).find((name) => {
+          const mesh = planetMeshesRef.current[name];
+          return (
+            mesh === intersectedObject ||
+            (mesh instanceof THREE.Object3D &&
+              mesh.children.includes(intersectedObject))
+          );
+        });
+
+        if (!planetName) {
+          // Try to find by traversing up the parent chain
+          let parent = intersectedObject.parent;
+          while (parent && !planetName) {
+            planetName = Object.keys(planetMeshesRef.current).find(
+              (name) => planetMeshesRef.current[name] === parent
+            );
+            parent = parent?.parent || null;
+          }
+        }
 
         if (planetName) {
+          console.log("Selected planet:", planetName);
           const selectedPlanet = planets.find((p) => p.name === planetName);
           if (selectedPlanet) {
+            console.log("Triggering selection for:", selectedPlanet.name);
             onSelectPlanet(selectedPlanet);
           }
         }
+      } else {
+        console.log("No intersection found");
       }
     };
 
@@ -261,7 +293,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     const sunPlanet = planets.find((p) => p.name === "Sun");
     if (sunPlanet && !planetMeshesRef.current["Sun"]) {
       const sunGeometry = new THREE.SphereGeometry(15, 32, 32);
-      const sunMaterial = new THREE.MeshBasicMaterial({
+      const sunMaterial = new THREE.MeshLambertMaterial({
         color: planetColors["Sun"],
         emissive: planetColors["Sun"],
         emissiveIntensity: 1,
@@ -320,7 +352,9 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
       // Adjust orbit to be flat on the XZ plane
       orbitLine.rotation.x = Math.PI / 2;
-      sceneRef.current.add(orbitLine);
+      if (sceneRef.current) {
+        sceneRef.current.add(orbitLine);
+      }
       orbitLinesRef.current.push(orbitLine);
 
       // Create or update planet mesh
@@ -333,7 +367,9 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           emissiveIntensity: 0.2,
         });
         const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
-        sceneRef.current.add(planetMesh);
+        if (sceneRef.current) {
+          sceneRef.current.add(planetMesh);
+        }
         planetMeshesRef.current[planet.name] = planetMesh;
 
         // Add glow effect for highlighted planets

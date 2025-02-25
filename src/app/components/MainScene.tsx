@@ -20,7 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { Planet } from "./Interface/PlanetInterface";
 
 // Import UI components
-import GameHUD from "./UI/GameHUD";
+import GameHUD from "./UI/GameHud";
 
 const BLOOM_LAYER = 1;
 
@@ -115,7 +115,7 @@ class Main {
   private bloomComposer!: EffectComposer;
   private objects_: THREE.Object3D[] = [];
   private container: HTMLDivElement;
-  private followPlanet: boolean = false;
+  private isFollowingPlanet: boolean = false;
   private targetPlanet?: Planet;
   private followOffset!: THREE.Vector3;
   private timeScale: number = 1;
@@ -183,7 +183,7 @@ class Main {
     // Add keyboard listener for ESC to exit follow/target mode
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        this.followPlanet = false;
+        this.isFollowingPlanet = false;
         this.fpsCamera.setFollowing(false);
         this.targetPlanet = undefined;
         this.setCurrentPlanet(null);
@@ -214,7 +214,7 @@ class Main {
       );
 
       if (planet) {
-        this.followPlanet = false;
+        this.isFollowingPlanet = false;
         this.fpsCamera.setFollowing(false);
         this.targetPlanet = planet.object;
         this.followOffset = new THREE.Vector3(
@@ -244,10 +244,14 @@ class Main {
         planet.object.diameter ||
         (planet.object.radius ? planet.object.radius * 2 : 10000);
       const planetPosition = planet.mesh.position.clone();
+
+      // Create an offset that places the camera at a good viewing distance
+      // Use a larger multiple for bigger planets
+      const distanceMultiplier = planetDiameter > 50000 ? 5 : 3;
       const offset = new THREE.Vector3(
         0,
         planetDiameter * 0.5,
-        planetDiameter * 3
+        planetDiameter * distanceMultiplier
       );
       const targetPosition = planetPosition.clone().add(offset);
 
@@ -259,14 +263,29 @@ class Main {
       );
 
       // Stop following during warp
-      this.followPlanet = false;
+      this.isFollowingPlanet = false;
       this.fpsCamera.setFollowing(false);
+
+      // Ensure TWEEN is properly initialized
+      if (!TWEEN) {
+        console.error("TWEEN not available!");
+        return;
+      }
+
+      // Create a new tween for camera movement
+      // Use longer duration for more distant planets
+      const distance = this.fpsCamera.translation_.distanceTo(targetPosition);
+      const duration = Math.min(5000, 2000 + distance * 0.00001);
+
+      // Show visual feedback that warp is happening
+      // This could be a UI overlay or effect
+      document.body.classList.add("warping");
 
       // Tween to new position with a dramatic curve
       new TWEEN.Tween(this.fpsCamera.translation_)
         .to(
           { x: targetPosition.x, y: targetPosition.y, z: targetPosition.z },
-          2000
+          duration
         )
         .easing(TWEEN.Easing.Exponential.InOut)
         .onUpdate(() => {
@@ -275,18 +294,45 @@ class Main {
         })
         .onComplete(() => {
           console.log(`Warp complete to: ${planet.object.name}`);
+          document.body.classList.remove("warping");
 
           // Only start following if in follow mode
           if (this.cameraMode === "follow") {
-            this.followPlanet = true;
+            this.isFollowingPlanet = true;
             this.fpsCamera.setFollowing(true);
             this.fpsCamera.setTarget(planet.mesh);
           }
+
+          // Add a small orbit adjustment at the end to get into a good viewing position
+          this.orbitAdjustment(planet.mesh, planetDiameter);
         })
         .start();
     } else {
       console.warn(`Planet not found: ${planetName}`);
     }
+  }
+
+  orbitAdjustment(
+    targetMesh: THREE.Mesh | THREE.Group,
+    planetDiameter: number
+  ) {
+    const targetPosition = targetMesh.position.clone();
+    const cameraPosition = this.fpsCamera.translation_.clone();
+
+    const orbitRadius = planetDiameter * 3;
+    const angle = Math.random() * Math.PI * 0.25;
+
+    const x = targetPosition.x + Math.cos(angle) * orbitRadius;
+    const z = targetPosition.z + Math.sin(angle) * orbitRadius;
+    const y = targetPosition.y + orbitRadius * 0.2;
+
+    new TWEEN.Tween(this.fpsCamera.translation_)
+      .to({ x, y, z }, 1000)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(() => {
+        this.fpsCamera.camera.lookAt(targetPosition);
+      })
+      .start();
   }
 
   followPlanet(planetName: string) {
@@ -299,7 +345,7 @@ class Main {
       this.targetPlanet = planet.object;
 
       // Enable following
-      this.followPlanet = true;
+      this.isFollowingPlanet = true;
       this.fpsCamera.setFollowing(true);
       this.fpsCamera.setTarget(planet.mesh);
 
@@ -337,12 +383,12 @@ class Main {
         (p) => p.object.name === this.targetPlanet!.name
       );
       if (planet) {
-        this.followPlanet = true;
+        this.isFollowingPlanet = true;
         this.fpsCamera.setFollowing(true);
         this.fpsCamera.setTarget(planet.mesh);
       }
     } else {
-      this.followPlanet = false;
+      this.isFollowingPlanet = false;
       this.fpsCamera.setFollowing(false);
     }
   }
@@ -465,7 +511,7 @@ class Main {
     this.fpsCamera.update(dt);
 
     // Handle planet following
-    if (this.followPlanet && this.targetPlanet) {
+    if (this.isFollowingPlanet && this.targetPlanet) {
       const planet = this.planets.find(
         (p) => p.object.name === this.targetPlanet!.name
       );

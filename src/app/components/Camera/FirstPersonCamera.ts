@@ -130,12 +130,34 @@ export default class FirstPersonCamera {
   private updateFollowMode_(timeElapsedS: number) {
     if (!this.target) return;
 
+    // Get target position
     const targetPosition = this.target.position.clone();
-    const offset = new THREE.Vector3(0, 0, -this.currentZoomDistance_);
+
+    // Calculate appropriate follow distance based on target size
+    // If the target has a diameter property, use it to scale the distance
+    let followDistance = this.currentZoomDistance_;
+    if (this.target.userData && this.target.userData.diameter) {
+      // Scale distance based on diameter
+      followDistance = this.target.userData.diameter * 3;
+    } else if (this.target.userData && this.target.userData.radius) {
+      // Scale distance based on radius
+      followDistance = this.target.userData.radius * 6;
+    }
+
+    // Create an offset vector behind and slightly above the target
+    const offset = new THREE.Vector3(0, followDistance * 0.2, followDistance);
+
+    // Apply camera rotation to the offset
     offset.applyQuaternion(this.rotation_);
-    targetPosition.add(offset);
-    this.translation_.lerp(targetPosition, 0.1);
-    this.camera.lookAt(this.target.position);
+
+    // Calculate the desired camera position
+    const desiredPosition = targetPosition.clone().add(offset);
+
+    // Smoothly move camera to the desired position
+    this.translation_.lerp(desiredPosition, 0.05);
+
+    // Always look at the target
+    this.camera.lookAt(targetPosition);
   }
 
   private updateOrbitMode_(timeElapsedS: number) {
@@ -143,18 +165,35 @@ export default class FirstPersonCamera {
 
     const targetPosition = this.target.position.clone();
 
-    // Update orbit angle
-    this.orbitAngle_ += this.orbitSpeed_ * timeElapsedS;
+    // Determine appropriate orbit distance based on target size
+    let orbitDistance = this.currentZoomDistance_;
+    if (this.target.userData && this.target.userData.diameter) {
+      orbitDistance = this.target.userData.diameter * 2;
+    } else if (this.target.userData && this.target.userData.radius) {
+      orbitDistance = this.target.userData.radius * 4;
+    }
 
-    // Calculate position on orbit circle
-    const x =
-      targetPosition.x + Math.cos(this.orbitAngle_) * this.currentZoomDistance_;
-    const z =
-      targetPosition.z + Math.sin(this.orbitAngle_) * this.currentZoomDistance_;
-    const y = targetPosition.y + this.currentZoomDistance_ * 0.3; // Slightly above orbit plane
+    // Update orbit angle with dynamic speed
+    // Smaller targets should have faster orbit speeds
+    const baseOrbitSpeed = this.orbitSpeed_;
+    const scaleFactor =
+      orbitDistance > 50000 ? 0.5 : orbitDistance > 10000 ? 1.0 : 2.0;
+    const adjustedSpeed = baseOrbitSpeed * scaleFactor;
 
-    // Set position and look at target
-    this.translation_.set(x, y, z);
+    this.orbitAngle_ += adjustedSpeed * timeElapsedS;
+
+    // Calculate position on orbit ellipse
+    // Use slight vertical offset for better viewing angle
+    const x = targetPosition.x + Math.cos(this.orbitAngle_) * orbitDistance;
+    const z = targetPosition.z + Math.sin(this.orbitAngle_) * orbitDistance;
+    const y = targetPosition.y + orbitDistance * 0.25; // Slightly above orbit plane
+
+    // Set position and look at target with smooth transition
+    const currentPos = this.translation_.clone();
+    const newPos = new THREE.Vector3(x, y, z);
+    this.translation_.lerp(newPos, 0.05);
+
+    // Always look at the target
     this.camera.lookAt(targetPosition);
   }
 

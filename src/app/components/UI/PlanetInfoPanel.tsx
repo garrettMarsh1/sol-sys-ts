@@ -18,15 +18,17 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     "overview" | "physical" | "orbital"
   >("overview");
 
-  const formatNumber = (num: number): string => {
-    if (num >= 1e9) {
-      return `${(num / 1e9).toFixed(2)} billion`;
-    } else if (num >= 1e6) {
-      return `${(num / 1e6).toFixed(2)} million`;
-    } else if (num >= 1e3) {
-      return `${(num / 1e3).toFixed(2)} thousand`;
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null || isNaN(num)) {
+      return "Unknown";
+    }
+
+    if (Math.abs(num) >= 1000000) {
+      return `${(num / 1000000).toFixed(2)}M km`;
+    } else if (Math.abs(num) >= 1000) {
+      return `${(num / 1000).toFixed(2)}K km`;
     } else {
-      return num.toFixed(2);
+      return `${num.toFixed(2)} km`;
     }
   };
 

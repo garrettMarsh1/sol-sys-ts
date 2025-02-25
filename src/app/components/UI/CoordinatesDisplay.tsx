@@ -27,11 +27,11 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
   // Format large numbers to be more readable with proper units
   const formatDistance = (value: number): string => {
     if (Math.abs(value) >= 1000000) {
-      return `${(value / 1000000).toFixed(2)}M km`;
+      return `${(value / 1000000).toFixed(2)}`;
     } else if (Math.abs(value) >= 1000) {
-      return `${(value / 1000).toFixed(2)}K km`;
+      return `${(value / 1000).toFixed(2)}`;
     } else {
-      return `${value.toFixed(2)} km`;
+      return `${value.toFixed(2)}`;
     }
   };
 
