@@ -25,6 +25,11 @@ import GameHUD from "./UI/GameHud";
 import { Planet } from "./Interface/PlanetInterface";
 import TrajectoryVisualization from "./Camera/TrajectoryVisualization";
 
+// Physics system imports
+import SolarSystemManager from "./Physics/SolarSystemManager";
+import OrbitalMechanics from "./Physics/OrbitalMechanics";
+import AstronomicalTime from "./Physics/AstronomicalTime";
+
 const MainScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<MainSceneWithAdvancedCamera | null>(null);
@@ -39,6 +44,9 @@ const MainScene: React.FC = () => {
   const [planets, setPlanets] = useState<Planet[]>([]);
   const [autopilotProgress, setAutopilotProgress] = useState(0);
   const [warpProgress, setWarpProgress] = useState(0);
+  const [currentDate, setCurrentDate] = useState<string>("");
+  const [relativisticEffects, setRelativisticEffects] = useState(true);
+  const [showOrbits, setShowOrbits] = useState(false);
 
   useEffect(() => {
     if (containerRef.current && !isInitializedRef.current) {
@@ -57,6 +65,7 @@ const MainScene: React.FC = () => {
             onModeChange: setCameraMode,
             onAutopilotProgressUpdate: setAutopilotProgress,
             onWarpProgressUpdate: setWarpProgress,
+            onDateUpdate: setCurrentDate,
           }
         );
 
@@ -114,6 +123,26 @@ const MainScene: React.FC = () => {
     }
   };
 
+  const handleSetRelativisticEffects = (enabled: boolean) => {
+    setRelativisticEffects(enabled);
+    if (sceneRef.current) {
+      sceneRef.current.setRelativisticEffects(enabled);
+    }
+  };
+
+  const handleSetShowOrbits = (show: boolean) => {
+    setShowOrbits(show);
+    if (sceneRef.current) {
+      sceneRef.current.setShowOrbits(show);
+    }
+  };
+
+  const handleSetDate = (date: Date) => {
+    if (sceneRef.current) {
+      sceneRef.current.setDate(date);
+    }
+  };
+
   return (
     <div className="relative w-full h-screen">
       <div ref={containerRef} className="absolute inset-0" />
@@ -148,6 +177,12 @@ const MainScene: React.FC = () => {
         warpProgress={warpProgress}
         onStartAutopilot={handleStartAutopilot}
         onCancelAutopilot={handleCancelAutopilot}
+        currentDate={currentDate}
+        relativisticEffects={relativisticEffects}
+        onToggleRelativisticEffects={handleSetRelativisticEffects}
+        showOrbits={showOrbits}
+        onToggleShowOrbits={handleSetShowOrbits}
+        onSetDate={handleSetDate}
       />
     </div>
   );
@@ -176,6 +211,15 @@ class MainSceneWithAdvancedCamera {
   private animationFrameId: number | null = null;
   private debug: boolean = false;
 
+  // Add solar system manager
+  private solarSystemManager: SolarSystemManager | null = null;
+
+  // Add physics simulation options
+  private useKeplerianOrbits: boolean = true;
+  private useNBodyPhysics: boolean = false;
+  private useRelativisticEffects: boolean = true;
+  private showOrbits: boolean = false;
+
   private callbacks: {
     onPlanetSelect: (planet: Planet | null) => void;
     onPositionUpdate: (position: { x: number; y: number; z: number }) => void;
@@ -184,6 +228,7 @@ class MainSceneWithAdvancedCamera {
     onModeChange: (mode: CameraMode) => void;
     onAutopilotProgressUpdate: (progress: number) => void;
     onWarpProgressUpdate: (progress: number) => void;
+    onDateUpdate: (date: string) => void;
   };
 
   constructor(
@@ -196,6 +241,7 @@ class MainSceneWithAdvancedCamera {
       onModeChange: (mode: CameraMode) => void;
       onAutopilotProgressUpdate: (progress: number) => void;
       onWarpProgressUpdate: (progress: number) => void;
+      onDateUpdate: (date: string) => void;
     }
   ) {
     this.container = container;
@@ -366,6 +412,17 @@ class MainSceneWithAdvancedCamera {
     ];
 
     try {
+      // Initialize the solar system manager
+      this.solarSystemManager = new SolarSystemManager(this.scene);
+
+      // Configure physics options
+      this.solarSystemManager.setPhysicsModel(this.useNBodyPhysics);
+      this.solarSystemManager.setRelativisticEffects(
+        this.useRelativisticEffects
+      );
+      this.solarSystemManager.setShowOrbits(this.showOrbits);
+
+      // Create planets and add them to the manager
       this.planets = planetClasses.map((PlanetClass) => {
         if (this.debug) console.log(`Creating planet: ${PlanetClass.name}`);
 
@@ -381,7 +438,8 @@ class MainSceneWithAdvancedCamera {
           planet.mesh.renderOrder = 0;
         }
 
-        this.scene.add(planet.mesh);
+        // Add to the solar system manager
+        this.solarSystemManager?.addPlanet(planet);
 
         if (this.debug)
           console.log(`Planet ${planet.name} created at`, planet.position);
@@ -393,9 +451,23 @@ class MainSceneWithAdvancedCamera {
         };
       });
 
+      // Start sending date updates to UI
+      this.updateDateDisplay();
+
       if (this.debug) console.log("Planets setup complete");
     } catch (error) {
       console.error("Error setting up planets:", error);
+    }
+  }
+
+  private updateDateDisplay() {
+    // Update date display every second
+    if (this.solarSystemManager) {
+      const dateStr = this.solarSystemManager.getFormattedDate();
+      this.callbacks.onDateUpdate(dateStr);
+
+      // Schedule next update
+      setTimeout(() => this.updateDateDisplay(), 1000);
     }
   }
 
@@ -459,8 +531,18 @@ class MainSceneWithAdvancedCamera {
       this.lastFrameTime = currentTime;
 
       if (this.timeScale !== 0) {
-        const scaledDelta = deltaTime * this.timeScale;
-        this.planets.forEach((planet) => planet.update(scaledDelta));
+        // Use the solar system manager to update all planets
+        if (this.solarSystemManager) {
+          // Scale time with the time scale factor
+          this.solarSystemManager.setTimeScale(this.timeScale);
+
+          // Update the entire solar system
+          this.solarSystemManager.update(currentTime);
+        } else {
+          // Fallback to the old update method if manager is not available
+          const scaledDelta = deltaTime * this.timeScale;
+          this.planets.forEach((planet) => planet.update(scaledDelta));
+        }
       }
 
       if (this.advancedCamera) {
@@ -533,6 +615,10 @@ class MainSceneWithAdvancedCamera {
 
   public setTimeScale(scale: number) {
     this.timeScale = scale;
+
+    if (this.solarSystemManager) {
+      this.solarSystemManager.setTimeScale(scale);
+    }
   }
 
   public setCameraMode(mode: CameraMode) {
@@ -732,6 +818,46 @@ class MainSceneWithAdvancedCamera {
     }
   }
 
+  // Physics control methods
+  public setPhysicsModel(useNBodyPhysics: boolean): void {
+    this.useNBodyPhysics = useNBodyPhysics;
+    this.useKeplerianOrbits = !useNBodyPhysics;
+
+    if (this.solarSystemManager) {
+      this.solarSystemManager.setPhysicsModel(useNBodyPhysics);
+    }
+  }
+
+  public setRelativisticEffects(enabled: boolean): void {
+    this.useRelativisticEffects = enabled;
+
+    if (this.solarSystemManager) {
+      this.solarSystemManager.setRelativisticEffects(enabled);
+    }
+  }
+
+  public setShowOrbits(show: boolean): void {
+    this.showOrbits = show;
+
+    if (this.solarSystemManager) {
+      this.solarSystemManager.setShowOrbits(show);
+    }
+  }
+
+  // Date management methods
+  public setDate(date: Date): void {
+    if (this.solarSystemManager) {
+      this.solarSystemManager.setDate(date);
+    }
+  }
+
+  public getCurrentDate(): string {
+    if (this.solarSystemManager) {
+      return this.solarSystemManager.getFormattedDate();
+    }
+    return new Date().toLocaleString();
+  }
+
   public dispose() {
     if (this.debug) console.log("Disposing scene resources");
 
@@ -748,6 +874,12 @@ class MainSceneWithAdvancedCamera {
 
     if (this.trajectoryVisualization) {
       this.trajectoryVisualization.dispose();
+    }
+
+    // Dispose the solar system manager
+    if (this.solarSystemManager) {
+      this.solarSystemManager.dispose();
+      this.solarSystemManager = null;
     }
 
     // Dispose stars if they have a dispose method
