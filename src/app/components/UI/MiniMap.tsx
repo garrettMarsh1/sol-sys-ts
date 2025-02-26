@@ -1,5 +1,4 @@
-// In src/app/components/UI/MiniMap.tsx:
-
+// Enhanced MiniMap.tsx with better planet rendering and interaction
 import React, { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 
@@ -24,12 +23,9 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   const planetMeshesRef = useRef<Record<string, THREE.Mesh>>({});
   const orbitLinesRef = useRef<THREE.Line[]>([]);
   const cameraMarkerRef = useRef<THREE.Mesh | null>(null);
-  // Remove rotation by default
-  const isRotatingRef = useRef<boolean>(false);
+  const isRotatingRef = useRef<boolean>(true); // Auto-rotate by default
   const isDraggingRef = useRef<boolean>(false);
-  const previousMousePositionRef = useRef<{ x: number; y: number } | null>(
-    null
-  );
+  const previousMousePositionRef = useRef<{ x: number; y: number } | null>(null);
 
   // State for expanded view
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -85,6 +81,8 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    console.log("Initializing MiniMap scene");
+
     // Create scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -138,7 +136,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     // Add grid lines
     const gridHelper = new THREE.GridHelper(800, 20, 0x2e78d4, 0x2e78d4);
     gridHelper.position.y = -19;
-    gridHelper.material = new THREE.LineBasicMaterial({
+    (gridHelper.material as THREE.Material) = new THREE.LineBasicMaterial({
       color: 0x3498db,
       transparent: true,
       opacity: 0.3,
@@ -297,11 +295,13 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       currentContainer.removeEventListener("mouseleave", handleMouseLeave);
       currentContainer.removeEventListener("click", handleClick);
     };
-  }, []);
+  }, [onSelectPlanet]);
 
   // Update planet positions and camera marker whenever data changes
   useEffect(() => {
     if (!sceneRef.current) return;
+
+    console.log("Updating MiniMap planets", planets.length);
 
     // Clear old orbit lines
     orbitLinesRef.current.forEach((line) => {
@@ -310,7 +310,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     orbitLinesRef.current = [];
 
     // Scale factor for the minimap
-    const scale = 0.000001;
+    const scale = 0.00001; // Increased scale to make planets more visible
 
     // Create sun at center
     const sunPlanet = planets.find((p) => p.name === "Sun");
@@ -342,12 +342,8 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       if (planet.name === "Sun") return; // Skip Sun as we already created it
 
       // Get planet data
-      const distanceFromSun = planet.distanceFromSun * scale;
-      const planetSize =
-        planet.name === "Sun"
-          ? 15
-          : (planet.radius || planet.diameter / 2 || 5) * scale * 50; // Scale up to make visible
-      const scaledSize = Math.max(5, Math.min(12, planetSize)); // Slightly larger for better visibility
+      const distanceFromSun = Math.max(50, (planet.distanceFromSun || 0) * scale);
+      const planetSize = Math.max(5, Math.min(12, ((planet.radius || planet.diameter / 2 || 5) * scale * 100))); // Scale up to make visible
 
       // Create orbit path
       const orbitPath = new THREE.EllipseCurve(
@@ -384,7 +380,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       // Create or update planet mesh
       if (!planetMeshesRef.current[planet.name]) {
         // Create new planet mesh
-        const planetGeometry = new THREE.SphereGeometry(scaledSize, 16, 16);
+        const planetGeometry = new THREE.SphereGeometry(planetSize, 16, 16);
         const planetMaterial = new THREE.MeshLambertMaterial({
           color: planetColors[planet.name] || 0xffffff,
           emissive: planetColors[planet.name] || 0xffffff,
@@ -394,7 +390,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         planetMesh.name = planet.name;
 
         // Make planet meshes slightly bigger for easier clicking
-        const hitboxGeometry = new THREE.SphereGeometry(scaledSize * 1.5, 8, 8);
+        const hitboxGeometry = new THREE.SphereGeometry(planetSize * 1.5, 8, 8);
         const hitboxMaterial = new THREE.MeshBasicMaterial({
           color: 0xffffff,
           transparent: true,
@@ -410,18 +406,36 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         planetMeshesRef.current[planet.name] = planetMesh;
 
         // Add label for each planet
-        const labelDiv = document.createElement("div");
-        labelDiv.className = "planet-label";
-        labelDiv.textContent = planet.name;
+        const createLabel = (name: string) => {
+          const labelDiv = document.createElement("div");
+          labelDiv.className = "absolute pointer-events-none";
+          labelDiv.style.color = "white";
+          labelDiv.style.fontSize = "10px";
+          labelDiv.style.textShadow = "0 0 3px rgba(0,0,0,0.8)";
+          labelDiv.style.userSelect = "none";
+          labelDiv.style.textAlign = "center";
+          labelDiv.textContent = name;
+          return labelDiv;
+        };
 
-        const label = new CSS2DObject(labelDiv);
-        label.position.set(0, scaledSize * 1.5, 0);
-        planetMesh.add(label);
+        // Add a ring for Saturn
+        if (planet.name === "Saturn") {
+          const ringGeometry = new THREE.RingGeometry(planetSize * 1.4, planetSize * 2, 32);
+          const ringMaterial = new THREE.MeshBasicMaterial({
+            color: 0xf0e68c,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.7,
+          });
+          const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+          ring.rotation.x = Math.PI / 2;
+          planetMesh.add(ring);
+        }
 
         // Add glow effect for highlighted planets
         if (currentPlanet && planet.name === currentPlanet.name) {
           const glowGeometry = new THREE.SphereGeometry(
-            scaledSize * 1.5,
+            planetSize * 1.5,
             16,
             16
           );
@@ -437,14 +451,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
       // Position the planet
       const planetMesh = planetMeshesRef.current[planet.name];
-      const angle =
-        (planet.meanAnomaly || 0) +
-        (planet.orbitalPeriod
-          ? (2 *
-              Math.PI *
-              (Date.now() % (planet.orbitalPeriod * 24 * 60 * 60 * 1000))) /
-            (planet.orbitalPeriod * 24 * 60 * 60 * 1000)
-          : 0);
+      const angle = Math.random() * Math.PI * 2; // Random position for this visualization
 
       // Position planets with a slight vertical offset so they don't all appear on the exact same plane
       planetMesh.position.set(
@@ -499,80 +506,40 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       }
 
       // Point in direction of movement
-      cameraMarkerRef.current.lookAt(0, 0, 0);
+      if (dist > 0) {
+        cameraMarkerRef.current.lookAt(0, 0, 0);
+      }
     }
   }, [planets, currentPlanet, cameraPosition, planetColors]);
 
   return (
     <div
-      className={`absolute ${
-        isExpanded ? "inset-0 z-50 bg-black bg-opacity-80" : "top-16 right-4"
-      } pointer-events-auto transition-all duration-300`}
+      className="flex-1 h-full relative"
+      style={{ 
+        overflow: "hidden", 
+        borderRadius: "4px"
+      }}
     >
-      <div
-        className={`game-panel minimap-panel ${
-          isExpanded ? "w-full h-full max-w-none" : ""
-        }`}
-      >
-        <div className="game-panel-header">
-          <div className="game-panel-title">System Map</div>
-          <div className="game-panel-controls flex space-x-2">
-            <button
-              onClick={() => {
-                isRotatingRef.current = !isRotatingRef.current;
-              }}
-              className="game-panel-button"
-              title={
-                isRotatingRef.current ? "Pause rotation" : "Resume rotation"
-              }
-            >
-              {isRotatingRef.current ? "⏸️" : "▶️"}
-            </button>
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="game-panel-button"
-              title={isExpanded ? "Minimize map" : "Expand map"}
-            >
-              {isExpanded ? "⬇️" : "⬆️"}
-            </button>
-          </div>
-        </div>
-        <div
-          ref={containerRef}
-          className="holographic-map"
-          style={{
-            width: isExpanded ? "calc(100% - 4px)" : "240px",
-            height: isExpanded ? "calc(100% - 60px)" : "240px",
+      <div 
+        ref={containerRef}
+        className="w-full h-full"
+      />
+      <div className="absolute bottom-2 left-2 text-xs text-cyan-400">
+        Drag to rotate • Click to select
+      </div>
+      <div className="absolute top-2 right-2 flex gap-2">
+        <button
+          onClick={() => {
+            isRotatingRef.current = !isRotatingRef.current;
           }}
-        />
-        <div className="game-panel-footer">
-          <div className="text-xs text-cyan-400">
-            Drag to rotate • Click to target •{" "}
-            {isExpanded
-              ? "Press Cmd/Ctrl+M to minimize"
-              : "Press Cmd/Ctrl+M to expand"}
-          </div>
-        </div>
+          className="game-panel-button"
+          title={isRotatingRef.current ? "Pause rotation" : "Resume rotation"}
+        >
+          {isRotatingRef.current ? "⏸️" : "▶️"}
+        </button>
       </div>
     </div>
   );
 };
-
-class CSS2DObject extends THREE.Object3D {
-  element: HTMLDivElement;
-
-  constructor(element: HTMLDivElement) {
-    super();
-    this.element = element;
-    this.element.style.position = "absolute";
-    this.element.style.fontSize = "10px";
-    this.element.style.color = "#ffffff";
-    this.element.style.textShadow = "0 0 3px rgba(0,0,0,0.8)";
-    this.element.style.pointerEvents = "none";
-    this.element.style.textAlign = "center";
-    this.element.style.width = "100px";
-    this.element.style.marginLeft = "-50px";
-  }
-}
 
 export default HolographicMiniMap;

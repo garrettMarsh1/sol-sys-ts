@@ -1,34 +1,24 @@
-// src/app/components/UI/CockpitInterface.tsx
-import React, { useState } from "react";
+// Updated CockpitInterface.tsx with better panel management
+import React, { useState, useEffect } from "react";
 import { CSSTransition } from "react-transition-group";
 
 interface CockpitInterfaceProps {
     children: React.ReactNode;
-
     currentPlanet: any | null;
-  
     cameraPosition: { x: number; y: number; z: number };
-  
     cameraVelocity: { x: number; y: number; z: number };
-  
     navigationPanel: React.ReactNode;
-  
     coordinatesPanel: React.ReactNode;
-  
     mapPanel: React.ReactNode;
-  
     timePanel: React.ReactNode;
-  
     planetInfoPanel: React.ReactNode;
-  
     controlsPanel: React.ReactNode;
-  
     destinationPanel: React.ReactNode;
 }
 
 // Panel positions and types
 export type PanelPosition = "left" | "right" | "top" | "bottom";
-export type PanelType = "navigation" | "coordinates" | "planetInfo" | "map" | "time" | "controls";
+export type PanelType = "navigation" | "coordinates" | "planetInfo" | "map" | "time" | "controls" | "destination";
 
 const CockpitInterface: React.FC<CockpitInterfaceProps> = ({ 
   children, 
@@ -40,14 +30,40 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
   mapPanel,
   timePanel,
   planetInfoPanel,
-  controlsPanel 
+  controlsPanel,
+  destinationPanel
 }) => {
   // Track which panels are visible
   const [visiblePanels, setVisiblePanels] = useState<PanelType[]>([]);
   const [selectedPlanet, setSelectedPlanet] = useState<any | null>(null);
   
+  // Update selectedPlanet when currentPlanet changes
+  useEffect(() => {
+    if (currentPlanet) {
+      setSelectedPlanet(currentPlanet);
+    }
+  }, [currentPlanet]);
+  
   // Function to toggle panel visibility
   const togglePanel = (panelType: PanelType) => {
+    console.log(`Toggling panel: ${panelType}`);
+    
+    // Special handling for the destination panel
+    if (panelType === 'destination') {
+      // If map is visible, hide it when showing destination
+      if (isPanelVisible('map')) {
+        setVisiblePanels(prev => prev.filter(p => p !== 'map'));
+      }
+    }
+    
+    // Special handling for the map panel
+    if (panelType === 'map') {
+      // If destination is visible, hide it when showing map
+      if (isPanelVisible('destination')) {
+        setVisiblePanels(prev => prev.filter(p => p !== 'destination'));
+      }
+    }
+    
     setVisiblePanels(prev => 
       prev.includes(panelType) 
         ? prev.filter(p => p !== panelType) 
@@ -108,6 +124,14 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
             <span className="cockpit-button-icon">📋</span>
             <span className="cockpit-button-label">CTRL</span>
           </button>
+
+          <button 
+            className={`cockpit-button ${isPanelVisible("destination") ? "cockpit-button-active" : ""}`} 
+            onClick={() => togglePanel("destination")}
+          >
+            <span className="cockpit-button-icon">🚀</span>
+            <span className="cockpit-button-label">DEST</span>
+          </button>
         </div>
         
         {/* Right side cockpit controls */}
@@ -134,7 +158,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               onClick={() => togglePanel("planetInfo")}
             >
               <span className="cockpit-button-icon">🪐</span>
-              <span className="cockpit-button-label">SCAN</span>
+              <span className="cockpit-button-label">INFO</span>
             </button>
           )}
         </div>
@@ -290,6 +314,30 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
             </div>
             <div className="panel-content">
               {controlsPanel}
+            </div>
+          </div>
+        </div>
+      </CSSTransition>
+      
+      <CSSTransition
+        in={isPanelVisible("destination")}
+        timeout={300}
+        classNames={getPanelAnimationClass("left")}
+        unmountOnExit
+      >
+        <div className="panel-container panel-right panel-offset-1">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>Destination Selector</h3>
+              <button 
+                className="panel-close-button" 
+                onClick={() => togglePanel("destination")}
+              >
+                ×
+              </button>
+            </div>
+            <div className="panel-content">
+              {destinationPanel}
             </div>
           </div>
         </div>

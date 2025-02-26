@@ -1,8 +1,9 @@
-// src/app/components/UI/GameHud.tsx
+// Updated GameHUD.tsx - improved map integration
 import React, { useState, useEffect } from "react";
 import PlanetInfoPanel from "./PlanetInfoPanel";
 import CockpitFrame from "./CockpitFrame";
 import CockpitInterface from "./CockpitInterface";
+import HolographicMiniMap from "./MiniMap"; // Import the MiniMap component
 import "./GameUI.css";
 import "./HolographicUI.css";
 import "./HolographicButtons.css"; 
@@ -44,6 +45,25 @@ const GameHUD: React.FC<GameHUDProps> = ({
 }) => {
   // State for help panel visibility
   const [showHelp, setShowHelp] = useState(false);
+  const [showDestinationSelector, setShowDestinationSelector] = useState(false);
+  // State for managing selected planet in the map (might be different from currentPlanet)
+  const [mapSelectedPlanet, setMapSelectedPlanet] = useState<any | null>(null);
+  // State to control the planet info panel visibility
+  const [showPlanetInfo, setShowPlanetInfo] = useState(false);
+  
+  // Set the mapSelectedPlanet when currentPlanet changes
+  useEffect(() => {
+    if (currentPlanet) {
+      setMapSelectedPlanet(currentPlanet);
+    }
+  }, [currentPlanet]);
+
+  // Handle planet selection from the map
+  const handleSelectPlanet = (planet: any) => {
+    console.log("Planet selected from map:", planet.name);
+    setMapSelectedPlanet(planet);
+    setShowPlanetInfo(true);
+  };
 
   // Speed calculation
   const velocityMagnitude = Math.sqrt(
@@ -293,23 +313,30 @@ const GameHUD: React.FC<GameHUDProps> = ({
           <div
             key={planet.name}
             className={`p-3 border border-blue-900 rounded hover:bg-blue-900/30 cursor-pointer ${
-              currentPlanet?.name === planet.name
+              mapSelectedPlanet?.name === planet.name
                 ? "border-cyan-500 bg-blue-900/50"
                 : ""
             }`}
+            onClick={() => handleSelectPlanet(planet)}
           >
             <div className="flex justify-between items-center">
               <div className="font-bold text-cyan-300">{planet.name}</div>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => onFollowPlanet(planet.name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onFollowPlanet(planet.name);
+                  }}
                   className="game-panel-button"
                   title="Select and follow"
                 >
                   👁️
                 </button>
                 <button
-                  onClick={() => onWarpToPlanet(planet.name)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onWarpToPlanet(planet.name);
+                  }}
                   className="game-panel-button"
                   title="Warp to planet"
                 >
@@ -336,6 +363,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
   // Map Panel
   const mapPanel = (
     <div className="map-panel-content" style={{ height: "310px" }}>
+      {/* Use the actual HolographicMiniMap component here */}
       <div 
         className="holographic-map-container"
         style={{ 
@@ -348,20 +376,18 @@ const GameHUD: React.FC<GameHUDProps> = ({
           backgroundColor: "rgba(8, 15, 40, 0.6)"
         }}
       >
-        <div className="hologram-effect" style={{ height: "100%" }}>
-          <div style={{ textAlign: "center", paddingTop: "110px", color: "#60dfff" }}>
-            <p>System Map</p>
-            <p className="text-xs mt-2">Click the MAP button on the side panel</p>
-            <p className="text-xs mt-1">to access the star map</p>
-          </div>
-        </div>
+        <HolographicMiniMap 
+          cameraPosition={cameraPosition}
+          planets={planets}
+          currentPlanet={currentPlanet}
+          onSelectPlanet={handleSelectPlanet}
+        />
       </div>
       <div className="mt-2 px-2">
         <div className="hologram-buttons-container">
           <button
-            onClick={() => onWarpToPlanet(currentPlanet?.name || planets[1]?.name)}
+            onClick={() => setShowDestinationSelector(true)}
             className="hologram-button"
-            disabled={!currentPlanet}
           >
             <span className="hologram-button-text">Open Destination Selector</span>
           </button>
@@ -514,12 +540,12 @@ const GameHUD: React.FC<GameHUDProps> = ({
   );
 
   // Planet Info Panel
-  const planetInfoPanel = currentPlanet && (
+  const planetInfoPanel = mapSelectedPlanet && (
     <PlanetInfoPanel
-      planet={currentPlanet}
-      onClose={() => {}}
-      onWarp={() => onWarpToPlanet(currentPlanet.name)}
-      onFollow={() => onFollowPlanet(currentPlanet.name)}
+      planet={mapSelectedPlanet}
+      onClose={() => setShowPlanetInfo(false)}
+      onWarp={() => onWarpToPlanet(mapSelectedPlanet.name)}
+      onFollow={() => onFollowPlanet(mapSelectedPlanet.name)}
     />
   );
 
@@ -654,6 +680,49 @@ const GameHUD: React.FC<GameHUDProps> = ({
               {warpProgress > 0
                 ? `Warp progress: ${Math.round(warpProgress * 100)}%`
                 : `Autopilot progress: ${Math.round(autopilotProgress * 100)}%`}
+            </div>
+          </div>
+        )}
+        
+        {/* Destination Selector Modal */}
+        {showDestinationSelector && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="game-panel w-96 max-h-[80vh]">
+              <div className="game-panel-header">
+                <div className="game-panel-title">Select Destination</div>
+                <button 
+                  onClick={() => setShowDestinationSelector(false)}
+                  className="game-panel-button"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="game-panel-content max-h-[calc(80vh-120px)] overflow-y-auto">
+                {planetSelectorPanel}
+              </div>
+              <div className="game-panel-footer">
+                Click a planet to view details or select travel options
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Planet Info Modal */}
+        {showPlanetInfo && mapSelectedPlanet && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="game-panel w-[700px] max-h-[80vh]">
+              <div className="game-panel-header">
+                <div className="game-panel-title">{mapSelectedPlanet.name} Information</div>
+                <button 
+                  onClick={() => setShowPlanetInfo(false)}
+                  className="game-panel-button"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="game-panel-content">
+                {planetInfoPanel}
+              </div>
             </div>
           </div>
         )}

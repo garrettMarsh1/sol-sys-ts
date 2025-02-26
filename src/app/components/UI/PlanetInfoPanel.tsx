@@ -1,4 +1,4 @@
-// src/app/components/UI/PlanetInfoPanel.tsx
+// Enhanced PlanetInfoPanel.tsx
 import React, { useState, useEffect } from "react";
 
 interface PlanetInfoPanelProps {
@@ -37,6 +37,23 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     }
   };
 
+  // Get planet color for visualization
+  const getPlanetColor = (name: string): string => {
+    switch (name.toLowerCase()) {
+      case "sun": return "#ffcc00";
+      case "mercury": return "#b5b5b5";
+      case "venus": return "#e8cda2";
+      case "earth": return "#3c70b4";
+      case "mars": return "#d83c22";
+      case "jupiter": return "#e0b568";
+      case "saturn": return "#c3a06b";
+      case "uranus": return "#a6d7e8";
+      case "neptune": return "#3e66f9";
+      case "pluto": return "#ab9588";
+      default: return "#ffffff";
+    }
+  };
+
   return (
     <div className="planet-info-content">
       <div className="hologram-tabs">
@@ -71,30 +88,60 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div className="flex justify-center items-center">
               <div
-                className="planet-image"
+                className="planet-image relative"
                 style={{
-                  backgroundColor:
-                    planet.name === "Sun"
-                      ? "#ffcc00"
-                      : planet.name === "Mercury"
-                      ? "#b5b5b5"
-                      : planet.name === "Venus"
-                      ? "#e8cda2"
-                      : planet.name === "Earth"
-                      ? "#3c70b4"
-                      : planet.name === "Mars"
-                      ? "#d83c22"
-                      : planet.name === "Jupiter"
-                      ? "#e0b568"
-                      : planet.name === "Saturn"
-                      ? "#c3a06b"
-                      : planet.name === "Uranus"
-                      ? "#a6d7e8"
-                      : planet.name === "Neptune"
-                      ? "#3e66f9"
-                      : "#ab9588", // Pluto
+                  backgroundColor: getPlanetColor(planet.name),
                 }}
-              ></div>
+              >
+                {/* Add rings for Saturn */}
+                {planet.name === "Saturn" && (
+                  <div 
+                    className="absolute inset-0 transform -rotate-12" 
+                    style={{
+                      overflow: 'hidden',
+                      zIndex: -1
+                    }}
+                  >
+                    <div 
+                      className="absolute" 
+                      style={{
+                        width: '200%',
+                        height: '40px',
+                        left: '-50%',
+                        top: 'calc(50% - 20px)',
+                        background: 'linear-gradient(90deg, rgba(195, 160, 107, 0) 0%, rgba(195, 160, 107, 0.8) 50%, rgba(195, 160, 107, 0) 100%)',
+                        boxShadow: '0 0 10px rgba(195, 160, 107, 0.5)',
+                        borderRadius: '50%',
+                        transform: 'rotate(0deg)'
+                      }}
+                    ></div>
+                  </div>
+                )}
+
+                {/* Add atmosphere glow for Earth, Venus, etc. */}
+                {["Earth", "Venus", "Uranus", "Neptune"].includes(planet.name) && (
+                  <div 
+                    className="absolute inset-0 rounded-full" 
+                    style={{
+                      boxShadow: `0 0 20px ${getPlanetColor(planet.name)}`,
+                      zIndex: -1
+                    }}
+                  ></div>
+                )}
+
+                {/* Add scanline effect */}
+                <div 
+                  className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
+                  style={{ zIndex: 2 }}
+                >
+                  <div 
+                    className="absolute w-full h-1 bg-blue-400 opacity-30"
+                    style={{ 
+                      animation: 'scan-line 2s linear infinite'
+                    }}
+                  ></div>
+                </div>
+              </div>
             </div>
             <div>
               <div className="data-label">Classification</div>
@@ -120,10 +167,10 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   <div>{formatNumber(planet.distanceFromSun)}</div>
 
                   <div className="text-cyan-400">Rotation Period:</div>
-                  <div>{planet.rotationPeriod} days</div>
+                  <div>{planet.rotationPeriod || "Unknown"} {planet.rotationPeriod ? "days" : ""}</div>
 
                   <div className="text-cyan-400">Day Length:</div>
-                  <div>{planet.lengthOfDay} hours</div>
+                  <div>{planet.lengthOfDay || "Unknown"} {planet.lengthOfDay ? "hours" : ""}</div>
                 </div>
               </div>
             </div>
@@ -155,7 +202,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
 
           <div className="text-xs text-center text-cyan-300 mt-3">
             Travel Time Estimate:{" "}
-            {formatNumber(Math.sqrt(planet.distanceFromSun) * 0.01)} minutes at
+            {formatNumber(Math.sqrt(planet.distanceFromSun || 0) * 0.01)} minutes at
             standard warp
           </div>
         </div>
@@ -171,32 +218,32 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
             <div>{formatNumber(planet.diameter)}</div>
 
             <div className="text-cyan-400">Density:</div>
-            <div>{planet.density} kg/m³</div>
+            <div>{planet.density || "Unknown"} {planet.density ? "kg/m³" : ""}</div>
 
             <div className="text-cyan-400">Surface Gravity:</div>
-            <div>{planet.gravity} m/s²</div>
+            <div>{planet.gravity || "Unknown"} {planet.gravity ? "m/s²" : ""}</div>
 
             <div className="text-cyan-400">Escape Velocity:</div>
-            <div>{planet.escapeVelocity} km/s</div>
+            <div>{planet.escapeVelocity || "Unknown"} {planet.escapeVelocity ? "km/s" : ""}</div>
 
             <div className="text-cyan-400">Surface Temperature:</div>
-            <div>{planet.meanTemperature} K</div>
+            <div>{planet.meanTemperature || "Unknown"} {planet.meanTemperature ? "K" : ""}</div>
 
-            {planet.surfacePressure > 0 && (
+            {(planet.surfacePressure > 0 || planet.name === "Earth") && (
               <>
                 <div className="text-cyan-400">Surface Pressure:</div>
-                <div>{planet.surfacePressure} Pa</div>
+                <div>{planet.surfacePressure || "1 atm"} {planet.surfacePressure ? "Pa" : ""}</div>
               </>
             )}
 
             <div className="text-cyan-400">Number of Moons:</div>
-            <div>{planet.numberOfMoons}</div>
+            <div>{planet.numberOfMoons || "0"}</div>
 
             <div className="text-cyan-400">Ring System:</div>
-            <div>{planet.hasRingSystem ? "Yes" : "No"}</div>
+            <div>{planet.name === "Saturn" || planet.name === "Uranus" || planet.name === "Jupiter" || planet.name === "Neptune" ? "Yes" : "No"}</div>
 
             <div className="text-cyan-400">Global Magnetic Field:</div>
-            <div>{planet.hasGlobalMagneticField ? "Yes" : "No"}</div>
+            <div>{["Earth", "Jupiter", "Saturn", "Uranus", "Neptune"].includes(planet.name) ? "Yes" : "No"}</div>
 
             {planet.composition && (
               <>
@@ -248,25 +295,25 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
             <div>{formatNumber(planet.aphelion)}</div>
 
             <div className="text-cyan-400">Orbital Period:</div>
-            <div>{planet.orbitalPeriod} days</div>
+            <div>{planet.orbitalPeriod || "Unknown"} {planet.orbitalPeriod ? "days" : ""}</div>
 
             <div className="text-cyan-400">Orbital Velocity:</div>
-            <div>{planet.orbitalVelocity} km/s</div>
+            <div>{planet.orbitalVelocity || "Unknown"} {planet.orbitalVelocity ? "km/s" : ""}</div>
 
             <div className="text-cyan-400">Orbital Inclination:</div>
-            <div>{planet.orbitalInclination}°</div>
+            <div>{planet.orbitalInclination || "0"}°</div>
 
             <div className="text-cyan-400">Eccentricity:</div>
-            <div>{planet.orbitalEccentricity}</div>
+            <div>{planet.orbitalEccentricity || "0"}</div>
 
             <div className="text-cyan-400">Axial Tilt:</div>
-            <div>{planet.obliquityToOrbit}°</div>
+            <div>{planet.obliquityToOrbit || "0"}°</div>
 
             <div className="text-cyan-400">Rotation Period:</div>
-            <div>{planet.rotationPeriod} days</div>
+            <div>{planet.rotationPeriod || "Unknown"} {planet.rotationPeriod ? "days" : ""}</div>
 
             <div className="text-cyan-400">Day Length:</div>
-            <div>{planet.lengthOfDay} hours</div>
+            <div>{planet.lengthOfDay || "Unknown"} {planet.lengthOfDay ? "hours" : ""}</div>
           </div>
           
           <div className="hologram-buttons-container mt-4">
