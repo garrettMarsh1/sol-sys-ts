@@ -1,14 +1,26 @@
-// src/app/components/UI/TimeControls.tsx
+// src/app/components/UI/TimeControls.tsx with astronomy & physics integration
 import React, { useState, useEffect } from "react";
 
 interface TimeControlsProps {
   timeScale: number;
   onSetTimeScale: (scale: number) => void;
+  currentDate: string;
+  relativisticEffects: boolean;
+  onToggleRelativisticEffects: (enabled: boolean) => void;
+  showOrbits: boolean;
+  onToggleShowOrbits: (show: boolean) => void;
+  onSetDate: (date: Date) => void;
 }
 
 const TimeControls: React.FC<TimeControlsProps> = ({
   timeScale,
   onSetTimeScale,
+  currentDate = "",
+  relativisticEffects = true,
+  onToggleRelativisticEffects = () => {},
+  showOrbits = false,
+  onToggleShowOrbits = () => {},
+  onSetDate = () => {},
 }) => {
   const timeScaleOptions = [
     { label: "Pause", value: 0 },
@@ -20,34 +32,45 @@ const TimeControls: React.FC<TimeControlsProps> = ({
   ];
 
   const [showTimeControls, setShowTimeControls] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [showDateSelector, setShowDateSelector] = useState(false);
+  const [showPhysicsSettings, setShowPhysicsSettings] = useState(false);
 
-  // Update the current time display
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+  // For date selection
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-    return () => clearInterval(interval);
-  }, []);
-
-  // Format the date in a futuristic way
-  const formatDate = (date: Date) => {
+  // Format for date input
+  const toLocalISOString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
 
-    return `${year}.${month}.${day} | ${hours}:${minutes}:${seconds}`;
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
+
+  // Parse current date string to maintain selected date
+  useEffect(() => {
+    if (currentDate) {
+      try {
+        setSelectedDate(new Date(currentDate));
+      } catch (error) {
+        console.error("Error parsing date:", error);
+      }
+    }
+  }, [currentDate]);
 
   // Get appropriate class for time scale
   const getTimeScaleClass = () => {
     if (timeScale === 0) return "text-red-400";
     if (timeScale > 1000) return "text-yellow-300";
     return "text-cyan-300";
+  };
+
+  // Apply selected date
+  const handleApplyDate = () => {
+    onSetDate(selectedDate);
+    setShowDateSelector(false);
   };
 
   return (
@@ -64,7 +87,43 @@ const TimeControls: React.FC<TimeControlsProps> = ({
       <div className="game-panel-content">
         <div className="mb-3">
           <div className="data-label">System Time</div>
-          <div className="data-value font-mono">{formatDate(currentTime)}</div>
+          <div className="data-value font-mono">{currentDate}</div>
+          <button
+            onClick={() => setShowDateSelector(!showDateSelector)}
+            className="game-button mt-2 w-full text-xs"
+          >
+            {showDateSelector ? "Cancel Date Selection" : "Set Date"}
+          </button>
+
+          {/* Date selector */}
+          {showDateSelector && (
+            <div className="mt-2 p-2 border border-blue-900 rounded">
+              <input
+                type="datetime-local"
+                className="bg-blue-900/30 border border-blue-800 text-white p-1 w-full mb-2 rounded"
+                value={toLocalISOString(selectedDate)}
+                onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              />
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleApplyDate}
+                  className="game-button flex-1 text-xs"
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => setShowDateSelector(false)}
+                  className="game-button flex-1 text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="text-xs text-cyan-300 mt-2">
+                Set date to view the solar system configuration at specific
+                times
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mb-3">
@@ -101,7 +160,7 @@ const TimeControls: React.FC<TimeControlsProps> = ({
               onClick={() => setShowTimeControls(!showTimeControls)}
               className="game-panel-button"
             >
-              {showTimeControls ? "Hide" : "Adjust"}
+              {showTimeControls ? "-" : "+"}
             </button>
           </div>
 
@@ -124,6 +183,65 @@ const TimeControls: React.FC<TimeControlsProps> = ({
                   {option.label}
                 </button>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Physics settings section */}
+        <div className="mt-4 pt-3 border-t border-blue-900">
+          <div className="flex items-center mb-2">
+            <div className="data-label flex-1">Physics Settings</div>
+            <button
+              onClick={() => setShowPhysicsSettings(!showPhysicsSettings)}
+              className="game-panel-button"
+            >
+              {showPhysicsSettings ? "-" : "+"}
+            </button>
+          </div>
+
+          <div className="mt-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm">Relativistic Effects</span>
+              <button
+                onClick={() =>
+                  onToggleRelativisticEffects(!relativisticEffects)
+                }
+                className={`game-button text-xs ${
+                  relativisticEffects ? "game-button-primary" : ""
+                }`}
+              >
+                {relativisticEffects ? "Enabled" : "Disabled"}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Show Orbits</span>
+              <button
+                onClick={() => onToggleShowOrbits(!showOrbits)}
+                className={`game-button text-xs ${
+                  showOrbits ? "game-button-primary" : ""
+                }`}
+              >
+                {showOrbits ? "Visible" : "Hidden"}
+              </button>
+            </div>
+          </div>
+
+          {/* Additional physics explanation */}
+          {showPhysicsSettings && (
+            <div className="mt-3 p-2 border border-blue-900 rounded bg-blue-900/20">
+              <div className="text-xs text-cyan-300 mb-1">
+                Relativistic effects include:
+              </div>
+              <ul className="text-xs text-gray-300 ml-4 list-disc space-y-1">
+                <li>Perihelion precession (most notable in Mercury)</li>
+                <li>Gravitational light deflection</li>
+                <li>Time dilation near massive objects</li>
+                <li>Relativistic orbital corrections</li>
+              </ul>
+              <div className="text-xs text-gray-300 mt-2">
+                Based on Einstein's General Theory of Relativity
+              </div>
             </div>
           )}
         </div>

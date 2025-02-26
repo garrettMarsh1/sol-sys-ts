@@ -1,4 +1,4 @@
-// Updated MiniMap.tsx with improved memory management
+// Updated MiniMap.tsx with accurate planet positioning and cleaner visualization
 import React, { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 
@@ -28,7 +28,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   const requestRef = useRef<number | null>(null);
 
   // User interaction state
-  const isRotatingRef = useRef<boolean>(true);
+  const isRotatingRef = useRef<boolean>(false);
   const isDraggingRef = useRef<boolean>(false);
   const previousMousePositionRef = useRef<{ x: number; y: number } | null>(
     null
@@ -40,6 +40,9 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
   // Initialization tracking to prevent duplicate setups
   const isInitializedRef = useRef<boolean>(false);
+
+  // Scale factor for the minimap - this is critical for accurate positioning
+  const SCALE_FACTOR = useRef<number>(0.00001);
 
   // Planet colors - using vibrant, game-like colors
   const planetColors: Record<string, string> = {
@@ -127,7 +130,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       sceneRef.current = scene;
 
       // Add ambient light
-      const ambientLight = new THREE.AmbientLight(0x333333);
+      const ambientLight = new THREE.AmbientLight(0x444444);
       scene.add(ambientLight);
 
       // Add point light at origin (sun position)
@@ -139,7 +142,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       const aspect =
         containerRef.current.clientWidth / containerRef.current.clientHeight;
       const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 10000);
-      camera.position.set(0, 300, 500);
+      camera.position.set(0, 400, 0); // Position camera top-down
       camera.lookAt(0, 0, 0);
       cameraRef.current = camera;
 
@@ -156,36 +159,12 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       containerRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
 
-      // Add base plane
-      const planeGeometry = new THREE.PlaneGeometry(800, 800);
-      const planeMaterial = new THREE.MeshBasicMaterial({
-        color: 0x0a2463,
-        transparent: true,
-        opacity: 0.15,
-        side: THREE.DoubleSide,
-      });
-      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-      plane.rotation.x = Math.PI / 2;
-      plane.position.y = -20;
-      scene.add(plane);
-
-      // Add grid
-      const gridHelper = new THREE.GridHelper(800, 20, 0x2e78d4, 0x2e78d4);
-      gridHelper.position.y = -19;
-      const gridMaterial = new THREE.LineBasicMaterial({
-        color: 0x3498db,
-        transparent: true,
-        opacity: 0.3,
-      });
-      gridHelper.material = gridMaterial;
-      scene.add(gridHelper);
-
       // Create camera position indicator
-      const cameraMarkerGeometry = new THREE.ConeGeometry(10, 20, 8);
+      const cameraMarkerGeometry = new THREE.ConeGeometry(8, 15, 8);
       const cameraMarkerMaterial = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
+        color: 0xff3333,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.8,
       });
       const cameraMarker = new THREE.Mesh(
         cameraMarkerGeometry,
@@ -194,6 +173,23 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       cameraMarker.rotation.x = Math.PI;
       scene.add(cameraMarker);
       cameraMarkerRef.current = cameraMarker;
+
+      // Calculate appropriate scale factor based on the furthest planet
+      const furthestPlanet = planets.reduce(
+        (max, planet) => {
+          if (planet.distanceFromSun > max.distanceFromSun) return planet;
+          return max;
+        },
+        { distanceFromSun: 0 }
+      );
+
+      if (furthestPlanet.distanceFromSun > 0) {
+        // Aim to fit the furthest planet within 80% of the minimap radius (350 units)
+        const mapRadius = 350;
+        SCALE_FACTOR.current =
+          (mapRadius * 0.8) / furthestPlanet.distanceFromSun;
+        console.log(`MiniMap scale factor: ${SCALE_FACTOR.current}`);
+      }
 
       // Setup the planets
       updatePlanets();
@@ -206,7 +202,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       console.error("Error initializing MiniMap scene:", error);
       isInitializedRef.current = false;
     }
-  }, []);
+  }, [planets]);
 
   // Update planet positions and handle cleanup of removed objects
   const updatePlanets = useCallback(() => {
@@ -216,9 +212,6 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     }
 
     try {
-      // Scale factor for the minimap
-      const scale = 0.00001;
-
       // Dispose and remove old orbit lines
       orbitLinesRef.current.forEach((line) => {
         if (line.geometry) line.geometry.dispose();
@@ -267,6 +260,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         });
         const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
         sunMesh.name = "Sun";
+        sunMesh.position.set(0, 0, 0);
         sceneRef.current.add(sunMesh);
         planetMeshesRef.current["Sun"] = sunMesh;
 
@@ -275,93 +269,101 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         const sunGlowMaterial = new THREE.MeshBasicMaterial({
           color: 0xffff00,
           transparent: true,
-          opacity: 0.4,
+          opacity: 0.3,
         });
         const sunGlow = new THREE.Mesh(sunGlowGeometry, sunGlowMaterial);
-        sceneRef.current.add(sunGlow);
+        sunMesh.add(sunGlow);
       }
 
       // Create or update other planets
       planets.forEach((planet) => {
-        if (planet.name === "Sun") return; // Skip Sun as it’s handled above
+        if (planet.name === "Sun") return; // Skip Sun as it's handled above
 
-        // Get planet data
-        let distanceFromSun = Math.max(
-          50,
-          (planet.distanceFromSun || 0) * scale
-        );
-        if (!distanceFromSun || distanceFromSun <= 50) {
-          switch (planet.name) {
-            case "Mercury":
-              distanceFromSun = 60;
-              break;
-            case "Venus":
-              distanceFromSun = 80;
-              break;
-            case "Earth":
-              distanceFromSun = 100;
-              break;
-            case "Mars":
-              distanceFromSun = 130;
-              break;
-            case "Jupiter":
-              distanceFromSun = 180;
-              break;
-            case "Saturn":
-              distanceFromSun = 240;
-              break;
-            case "Uranus":
-              distanceFromSun = 290;
-              break;
-            case "Neptune":
-              distanceFromSun = 340;
-              break;
-            case "Pluto":
-              distanceFromSun = 380;
-              break;
-            default:
-              distanceFromSun = 100;
-              break;
-          }
+        // Get planet radius - scale smaller planets up a bit for visibility
+        let planetSize;
+        if (planet.radius < 10000) {
+          planetSize = 5; // Small planets (Mercury, Mars, etc.)
+        } else if (planet.radius < 40000) {
+          planetSize = 7; // Medium planets (Earth, Venus)
+        } else if (planet.radius < 100000) {
+          planetSize = 10; // Large planets (Uranus, Neptune)
+        } else {
+          planetSize = 12; // Giant planets (Jupiter, Saturn)
         }
 
-        const planetSize = Math.max(
-          5,
-          Math.min(
-            12,
-            (planet.radius || planet.diameter / 2 || 5) * scale * 100
-          )
-        );
+        // Create orbit visualization based on planet's actual semi-major axis
+        if (planet.semiMajorAxis && planet.eccentricity !== undefined) {
+          const semiMajorAxis = planet.semiMajorAxis * SCALE_FACTOR.current;
+          const semiMinorAxis =
+            semiMajorAxis *
+            Math.sqrt(1 - planet.eccentricity * planet.eccentricity);
 
-        // Create orbit path
-        const orbitPath = new THREE.EllipseCurve(
-          0,
-          0,
-          distanceFromSun,
-          distanceFromSun,
-          0,
-          2 * Math.PI,
-          false,
-          0
-        );
+          // Create elliptical path points
+          const segments = 128;
+          const points: THREE.Vector3[] = [];
 
-        const orbitPoints = orbitPath.getPoints(100);
-        const orbitGeometry = new THREE.BufferGeometry().setFromPoints(
-          orbitPoints
-        );
-        const orbitLine = new THREE.Line(
-          orbitGeometry,
-          new THREE.LineBasicMaterial({
-            color: 0x3498db,
+          for (let i = 0; i <= segments; i++) {
+            const theta = (i / segments) * Math.PI * 2;
+            const x = semiMajorAxis * Math.cos(theta);
+            const z = semiMinorAxis * Math.sin(theta);
+            points.push(new THREE.Vector3(x, 0, z));
+          }
+
+          const orbitGeometry = new THREE.BufferGeometry().setFromPoints(
+            points
+          );
+
+          // Apply orbital inclination if available
+          if (planet.orbitalInclination) {
+            const inclinationRad = (planet.orbitalInclination * Math.PI) / 180;
+            const rotMatrix = new THREE.Matrix4().makeRotationX(inclinationRad);
+            orbitGeometry.applyMatrix4(rotMatrix);
+          }
+
+          // Create the orbit line with appropriate color
+          let orbitColor = 0x3498db; // Default blue
+
+          switch (planet.name.toLowerCase()) {
+            case "mercury":
+              orbitColor = 0xcccccc;
+              break;
+            case "venus":
+              orbitColor = 0xeedd82;
+              break;
+            case "earth":
+              orbitColor = 0x6495ed;
+              break;
+            case "mars":
+              orbitColor = 0xcd5c5c;
+              break;
+            case "jupiter":
+              orbitColor = 0xffa500;
+              break;
+            case "saturn":
+              orbitColor = 0xffd700;
+              break;
+            case "uranus":
+              orbitColor = 0x40e0d0;
+              break;
+            case "neptune":
+              orbitColor = 0x0000cd;
+              break;
+            case "pluto":
+              orbitColor = 0x8b4513;
+              break;
+          }
+
+          const orbitMaterial = new THREE.LineBasicMaterial({
+            color: orbitColor,
             transparent: true,
-            opacity: 0.3,
-          })
-        );
+            opacity: planet.name === currentPlanet?.name ? 0.8 : 0.4,
+          });
 
-        // Adjust orbit to be flat on the XZ plane
-        orbitLine.rotation.x = Math.PI / 2;
-        sceneRef.current?.add(orbitLine);
-        orbitLinesRef.current.push(orbitLine);
+          const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
+          orbitLine.name = `${planet.name}-orbit`;
+          sceneRef.current?.add(orbitLine);
+          orbitLinesRef.current.push(orbitLine);
+        }
 
         // Create or update planet mesh
         if (!planetMeshesRef.current[planet.name]) {
@@ -374,6 +376,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
           planetMesh.name = planet.name;
 
+          // Add hitbox for interaction (slightly larger than visible planet)
           const hitboxGeometry = new THREE.SphereGeometry(
             planetSize * 1.5,
             8,
@@ -391,6 +394,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           sceneRef.current?.add(planetMesh);
           planetMeshesRef.current[planet.name] = planetMesh;
 
+          // Add rings for Saturn
           if (planet.name === "Saturn") {
             const ringGeometry = new THREE.RingGeometry(
               planetSize * 1.4,
@@ -409,43 +413,71 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           }
         }
 
-        // Position the planet
+        // Position the planet using its actual position
         const planetMesh = planetMeshesRef.current[planet.name];
-        let angle = 0;
+
+        // Only update if planet has valid position data
         if (
           planet.position &&
           !isNaN(planet.position.x) &&
           !isNaN(planet.position.y) &&
           !isNaN(planet.position.z)
         ) {
-          angle = Math.atan2(planet.position.z, planet.position.x);
-        } else {
-          angle = Math.random() * Math.PI * 2;
-        }
+          // Scale the actual planet position to fit in the minimap
+          const scaledX = planet.position.x * SCALE_FACTOR.current;
+          const scaledY = planet.position.y * SCALE_FACTOR.current;
+          const scaledZ = planet.position.z * SCALE_FACTOR.current;
 
-        planetMesh.position.set(
-          Math.cos(angle) * distanceFromSun,
-          planet.orbitalInclination
-            ? Math.sin(planet.orbitalInclination * 0.1) * 10
-            : 0,
-          Math.sin(angle) * distanceFromSun
-        );
+          planetMesh.position.set(scaledX, scaledY, scaledZ);
+        }
 
         // Highlight current planet
         if (currentPlanet && planet.name === currentPlanet.name) {
           planetMesh.scale.set(1.5, 1.5, 1.5);
+          // Add a highlight effect
+          if (!planetMesh.userData.highlighted) {
+            const highlightGeometry = new THREE.RingGeometry(
+              planetSize * 2,
+              planetSize * 2.2,
+              32
+            );
+            const highlightMaterial = new THREE.MeshBasicMaterial({
+              color: 0x00ffff,
+              side: THREE.DoubleSide,
+              transparent: true,
+              opacity: 0.7,
+            });
+            const highlight = new THREE.Mesh(
+              highlightGeometry,
+              highlightMaterial
+            );
+            highlight.rotation.x = Math.PI / 2;
+            highlight.name = "highlight";
+            planetMesh.add(highlight);
+            planetMesh.userData.highlighted = true;
+          }
         } else {
           planetMesh.scale.set(1, 1, 1);
+          // Remove highlight if exists
+          if (planetMesh.userData.highlighted) {
+            const highlight = planetMesh.children.find(
+              (child) => child.name === "highlight"
+            );
+            if (highlight) {
+              planetMesh.remove(highlight);
+            }
+            planetMesh.userData.highlighted = false;
+          }
         }
       });
 
       // Update camera marker position
       if (cameraMarkerRef.current) {
-        const scaledX = cameraPosition.x * scale;
-        const scaledY = cameraPosition.y * scale;
-        const scaledZ = cameraPosition.z * scale;
+        const scaledX = cameraPosition.x * SCALE_FACTOR.current;
+        const scaledY = cameraPosition.y * SCALE_FACTOR.current;
+        const scaledZ = cameraPosition.z * SCALE_FACTOR.current;
 
-        const maxDist = 400;
+        const maxDist = 380; // Keep within map bounds
         const dist = Math.sqrt(
           scaledX * scaledX + scaledY * scaledY + scaledZ * scaledZ
         );
@@ -461,6 +493,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           cameraMarkerRef.current.position.set(scaledX, scaledY, scaledZ);
         }
 
+        // Make the camera marker point in the right direction
         if (dist > 0) {
           cameraMarkerRef.current.lookAt(0, 0, 0);
         }
@@ -468,19 +501,19 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     } catch (error) {
       console.error("Error updating planet positions:", error);
     }
-  }, [planets, currentPlanet, cameraPosition, planetColors]);
+  }, [planets, currentPlanet, cameraPosition]);
 
   // Animation loop
   const animate = useCallback(() => {
     if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
 
     try {
+      // Only rotate scene if that feature is enabled and not dragging
       if (isRotatingRef.current && !isDraggingRef.current && sceneRef.current) {
         sceneRef.current.rotation.y += 0.001;
       }
 
       rendererRef.current.render(sceneRef.current, cameraRef.current);
-
       requestRef.current = requestAnimationFrame(animate);
     } catch (error) {
       console.error("Error in animation loop:", error);
@@ -498,7 +531,6 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
       cameraRef.current.aspect = width / height;
       cameraRef.current.updateProjectionMatrix();
-
       rendererRef.current.setSize(width, height);
     } catch (error) {
       console.error("Error handling resize:", error);
@@ -564,7 +596,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       const dy = event.clientY - initialClickPosition.y;
       const dragDistance = Math.sqrt(dx * dx + dy * dy);
 
-      if (dragDistance > 5) return;
+      if (dragDistance > 5) return; // Skip if this was a drag, not a click
 
       if (!cameraRef.current || !rendererRef.current || !sceneRef.current)
         return;
@@ -579,10 +611,14 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(mouse, cameraRef.current);
 
+        // Get all planet meshes to check for intersections
         const planetMeshes = Object.values(planetMeshesRef.current);
         const intersects = raycaster.intersectObjects(planetMeshes, true);
+
         if (intersects.length > 0) {
           const intersectedObject = intersects[0].object;
+
+          // Find the planet name from the intersected object or its parent
           let planetName = Object.keys(planetMeshesRef.current).find(
             (name) =>
               planetMeshesRef.current[name] === intersectedObject ||
@@ -590,6 +626,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           );
 
           if (!planetName) {
+            // Check if it's a child of a planet mesh
             let parent = intersectedObject.parent;
             while (parent && !planetName) {
               planetName = Object.keys(planetMeshesRef.current).find(
@@ -600,6 +637,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           }
 
           if (planetName) {
+            // Find the planet object from the name
             const selectedPlanet = planets.find((p) => p.name === planetName);
             if (selectedPlanet) {
               onSelectPlanet(selectedPlanet);

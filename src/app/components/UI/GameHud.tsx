@@ -1,12 +1,12 @@
-// Updated GameHUD.tsx with proper MiniMap integration
+// Updated GameHUD.tsx with physics system integration
 import React, { useState, useEffect } from "react";
 import PlanetInfoPanel from "./PlanetInfoPanel";
 import CockpitFrame from "./CockpitFrame";
 import CockpitInterface from "./CockpitInterface";
-import HolographicMiniMap from "./MiniMap"; // Import the MiniMap component
+import HolographicMiniMap from "./MiniMap";
 import "./GameUI.css";
 import "./HolographicUI.css";
-import "./HolographicButtons.css"; 
+import "./HolographicButtons.css";
 
 interface GameHUDProps {
   currentPlanet: any | null;
@@ -25,6 +25,13 @@ interface GameHUDProps {
   warpProgress?: number;
   onStartAutopilot?: () => void;
   onCancelAutopilot?: () => void;
+  // New props for physics system
+  currentDate: string;
+  relativisticEffects: boolean;
+  onToggleRelativisticEffects: (enabled: boolean) => void;
+  showOrbits: boolean;
+  onToggleShowOrbits: (show: boolean) => void;
+  onSetDate: (date: Date) => void;
 }
 
 const GameHUD: React.FC<GameHUDProps> = ({
@@ -43,6 +50,13 @@ const GameHUD: React.FC<GameHUDProps> = ({
   warpProgress = 0,
   onStartAutopilot = () => {},
   onCancelAutopilot = () => {},
+  // New physics props
+  currentDate = "",
+  relativisticEffects = true,
+  onToggleRelativisticEffects = () => {},
+  showOrbits = false,
+  onToggleShowOrbits = () => {},
+  onSetDate = () => {},
 }) => {
   // State for help panel visibility
   const [showHelp, setShowHelp] = useState(false);
@@ -51,7 +65,12 @@ const GameHUD: React.FC<GameHUDProps> = ({
   const [mapSelectedPlanet, setMapSelectedPlanet] = useState<any | null>(null);
   // State to control the planet info panel visibility
   const [showPlanetInfo, setShowPlanetInfo] = useState(false);
-  
+  // State for physics settings panel
+  const [showPhysicsSettings, setShowPhysicsSettings] = useState(false);
+  // State for date selector
+  const [showDateSelector, setShowDateSelector] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   // Set the mapSelectedPlanet when currentPlanet changes
   useEffect(() => {
     if (currentPlanet) {
@@ -69,10 +88,10 @@ const GameHUD: React.FC<GameHUDProps> = ({
   // Speed calculation
   const velocityMagnitude = Math.sqrt(
     cameraVelocity.x * cameraVelocity.x +
-    cameraVelocity.y * cameraVelocity.y +
-    cameraVelocity.z * cameraVelocity.z
+      cameraVelocity.y * cameraVelocity.y +
+      cameraVelocity.z * cameraVelocity.z
   );
-  
+
   // Helper function to format distance
   function formatDistance(value: number): string {
     if (Math.abs(value) >= 1000000) {
@@ -83,16 +102,22 @@ const GameHUD: React.FC<GameHUDProps> = ({
       return `${value.toFixed(2)}`;
     }
   }
-  
+
   // Helper function to calculate target distance
   function calculateTargetDistance(): number {
     if (!currentPlanet) return 0;
     return Math.sqrt(
       Math.pow(cameraPosition.x - currentPlanet.position.x, 2) +
-      Math.pow(cameraPosition.y - currentPlanet.position.y, 2) +
-      Math.pow(cameraPosition.z - currentPlanet.position.z, 2)
+        Math.pow(cameraPosition.y - currentPlanet.position.y, 2) +
+        Math.pow(cameraPosition.z - currentPlanet.position.z, 2)
     );
   }
+
+  // Apply selected date
+  const handleApplyDate = () => {
+    onSetDate(selectedDate);
+    setShowDateSelector(false);
+  };
 
   // Navigation Controls Panel
   const navigationPanel = (
@@ -152,85 +177,84 @@ const GameHUD: React.FC<GameHUDProps> = ({
       </div>
 
       {(currentPlanet || mapSelectedPlanet) && (
-  <div className="space-y-2 mb-3">
-    <div className="hologram-buttons-container">
-      <button
-        onClick={
-          autopilotProgress > 0
-            ? onCancelAutopilot
-            : () => {
+        <div className="space-y-2 mb-3">
+          <div className="hologram-buttons-container">
+            <button
+              onClick={
+                autopilotProgress > 0
+                  ? onCancelAutopilot
+                  : () => {
+                      // Use either currentPlanet or mapSelectedPlanet
+                      const targetPlanet = currentPlanet || mapSelectedPlanet;
+                      if (targetPlanet) {
+                        // First set the planet as target if it's not the current target
+                        if (
+                          !currentPlanet ||
+                          currentPlanet.name !== targetPlanet.name
+                        ) {
+                          onFollowPlanet(targetPlanet.name);
+                        }
+                        // Then start autopilot
+                        onStartAutopilot();
+                      }
+                    }
+              }
+              className={`hologram-button ${
+                autopilotProgress > 0
+                  ? "hologram-button-danger"
+                  : "hologram-button-success"
+              }`}
+              disabled={warpProgress > 0}
+            >
+              <span className="hologram-button-text">
+                {autopilotProgress > 0 ? "Cancel Autopilot" : "Start Autopilot"}
+              </span>
+            </button>
+            <button
+              onClick={() => {
                 // Use either currentPlanet or mapSelectedPlanet
                 const targetPlanet = currentPlanet || mapSelectedPlanet;
                 if (targetPlanet) {
-                  // First set the planet as target if it's not the current target
-                  if (!currentPlanet || currentPlanet.name !== targetPlanet.name) {
-                    onFollowPlanet(targetPlanet.name);
-                  }
-                  // Then start autopilot
-                  onStartAutopilot();
+                  onWarpToPlanet(targetPlanet.name);
                 }
-              }
-        }
-        className={`hologram-button ${
-          autopilotProgress > 0
-            ? "hologram-button-danger"
-            : "hologram-button-success"
-        }`}
-        disabled={warpProgress > 0}
-      >
-        <span className="hologram-button-text">
-          {autopilotProgress > 0
-            ? "Cancel Autopilot"
-            : "Start Autopilot"}
-        </span>
-      </button>
-      <button
-        onClick={() => {
-          // Use either currentPlanet or mapSelectedPlanet
-          const targetPlanet = currentPlanet || mapSelectedPlanet;
-          if (targetPlanet) {
-            onWarpToPlanet(targetPlanet.name);
-          }
-        }}
-        className="hologram-button hologram-button-warning"
-        disabled={
-          warpProgress > 0 ||
-          autopilotProgress > 0
-        }
-      >
-        <span className="hologram-button-text">Warp</span>
-      </button>
-    </div>
-    
-    {autopilotProgress > 0 && (
-      <div>
-        <div className="text-xs mb-1 text-cyan-400">Autopilot Progress</div>
-        <div className="progress-bar">
-          <div
-            className="progress-bar-fill"
-            style={{ width: `${autopilotProgress * 100}%` }}
-          ></div>
-        </div>
-      </div>
-    )}
-    
-    {warpProgress > 0 && (
-      <div>
-        <div className="text-xs mb-1 text-yellow-300">Warp Progress</div>
-        <div className="progress-bar">
-          <div
-            className="progress-bar-fill"
-            style={{
-              width: `${warpProgress * 100}%`,
-              backgroundColor: "#f59e0b",
-            }}
-          ></div>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+              }}
+              className="hologram-button hologram-button-warning"
+              disabled={warpProgress > 0 || autopilotProgress > 0}
+            >
+              <span className="hologram-button-text">Warp</span>
+            </button>
+          </div>
 
+          {autopilotProgress > 0 && (
+            <div>
+              <div className="text-xs mb-1 text-cyan-400">
+                Autopilot Progress
+              </div>
+              <div className="progress-bar">
+                <div
+                  className="progress-bar-fill"
+                  style={{ width: `${autopilotProgress * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          {warpProgress > 0 && (
+            <div>
+              <div className="text-xs mb-1 text-yellow-300">Warp Progress</div>
+              <div className="progress-bar">
+                <div
+                  className="progress-bar-fill"
+                  style={{
+                    width: `${warpProgress * 100}%`,
+                    backgroundColor: "#f59e0b",
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div>
         <div className="data-label mb-1">Control Reference</div>
@@ -248,7 +272,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
           <div className="text-white">Click + Drag</div>
         </div>
       </div>
-      
+
       <div className="mt-3 pt-3 border-t border-blue-900">
         <div className="text-xs text-cyan-400">
           {cameraMode === "fps" && "Manual control engaged"}
@@ -286,7 +310,11 @@ const GameHUD: React.FC<GameHUDProps> = ({
         <div className="data-label">Flight Data</div>
         <div className="grid grid-cols-2 gap-x-2 gap-y-1">
           <div className="text-cyan-400">Speed:</div>
-          <div className={`text-white ${velocityMagnitude > 50 ? "text-yellow-300" : ""}`}>
+          <div
+            className={`text-white ${
+              velocityMagnitude > 50 ? "text-yellow-300" : ""
+            }`}
+          >
             {velocityMagnitude.toFixed(2)} km/s
           </div>
 
@@ -302,9 +330,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
           <div className="data-label">Target Data</div>
           <div className="grid grid-cols-2 gap-x-2 gap-y-1">
             <div className="text-cyan-400">Object:</div>
-            <div className="text-yellow-300">
-              {currentPlanet.name}
-            </div>
+            <div className="text-yellow-300">{currentPlanet.name}</div>
 
             <div className="text-cyan-400">Status:</div>
             <div className="text-white">
@@ -318,7 +344,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
           </div>
         </div>
       )}
-      
+
       <div className="holographic-scanline"></div>
     </div>
   );
@@ -327,69 +353,72 @@ const GameHUD: React.FC<GameHUDProps> = ({
   const planetSelectorPanel = (
     <div className="planet-selector-content">
       <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto pr-2">
-        {planets.filter(p => p.name !== "Sun").map((planet) => (
-          <div
-            key={planet.name}
-            className={`p-3 border border-blue-900 rounded hover:bg-blue-900/30 cursor-pointer ${
-              mapSelectedPlanet?.name === planet.name
-                ? "border-cyan-500 bg-blue-900/50"
-                : ""
-            }`}
-            onClick={() => handleSelectPlanet(planet)}
-          >
-            <div className="flex justify-between items-center">
-              <div className="font-bold text-cyan-300">{planet.name}</div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onFollowPlanet(planet.name);
-                  }}
-                  className="game-panel-button"
-                  title="Select and follow"
-                >
-                  👁️
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onWarpToPlanet(planet.name);
-                  }}
-                  className="game-panel-button"
-                  title="Warp to planet"
-                >
-                  🚀
-                </button>
+        {planets
+          .filter((p) => p.name !== "Sun")
+          .map((planet) => (
+            <div
+              key={planet.name}
+              className={`p-3 border border-blue-900 rounded hover:bg-blue-900/30 cursor-pointer ${
+                mapSelectedPlanet?.name === planet.name
+                  ? "border-cyan-500 bg-blue-900/50"
+                  : ""
+              }`}
+              onClick={() => handleSelectPlanet(planet)}
+            >
+              <div className="flex justify-between items-center">
+                <div className="font-bold text-cyan-300">{planet.name}</div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFollowPlanet(planet.name);
+                    }}
+                    className="game-panel-button"
+                    title="Select and follow"
+                  >
+                    👁️
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onWarpToPlanet(planet.name);
+                    }}
+                    className="game-panel-button"
+                    title="Warp to planet"
+                  >
+                    🚀
+                  </button>
+                </div>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Distance:{" "}
+                {formatDistance(
+                  Math.sqrt(
+                    Math.pow(cameraPosition.x - planet.position.x, 2) +
+                      Math.pow(cameraPosition.y - planet.position.y, 2) +
+                      Math.pow(cameraPosition.z - planet.position.z, 2)
+                  )
+                )}{" "}
+                km
               </div>
             </div>
-            <div className="text-xs text-gray-400 mt-1">
-              Distance:{" "}
-              {formatDistance(
-                Math.sqrt(
-                  Math.pow(cameraPosition.x - planet.position.x, 2) +
-                    Math.pow(cameraPosition.y - planet.position.y, 2) +
-                    Math.pow(cameraPosition.z - planet.position.z, 2)
-                )
-              )} km
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
-  );  
+  );
 
   // Map Panel - Now correctly uses the HolographicMiniMap component
   const mapPanel = (
     <div className="map-panel-content">
-      <div 
+      <div
         className="holographic-map-container"
-        style={{ 
-          width: "100%", 
-          height: "250px", 
+        style={{
+          width: "100%",
+          height: "250px",
           border: "1px solid rgba(64, 153, 255, 0.3)",
           borderRadius: "4px",
           overflow: "hidden",
-          position: "relative"
+          position: "relative",
         }}
       >
         <HolographicMiniMap
@@ -405,7 +434,9 @@ const GameHUD: React.FC<GameHUDProps> = ({
             onClick={() => setShowDestinationSelector(true)}
             className="hologram-button"
           >
-            <span className="hologram-button-text">Open Destination Selector</span>
+            <span className="hologram-button-text">
+              Open Destination Selector
+            </span>
           </button>
         </div>
       </div>
@@ -414,28 +445,6 @@ const GameHUD: React.FC<GameHUDProps> = ({
 
   // Time Controls Panel
   const [showTimeControls, setShowTimeControls] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Update the current time display
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Format the date in a futuristic way
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
-
-    return `${year}.${month}.${day} | ${hours}:${minutes}:${seconds}`;
-  };
 
   // Get appropriate class for time scale
   const getTimeScaleClass = () => {
@@ -448,14 +457,43 @@ const GameHUD: React.FC<GameHUDProps> = ({
     <div className="time-panel-content">
       <div className="mb-3">
         <div className="data-label">System Time</div>
-        <div className="text-white font-mono">{formatDate(currentTime)}</div>
+        <div className="text-white font-mono">{currentDate}</div>
+        <button
+          onClick={() => setShowDateSelector(!showDateSelector)}
+          className="game-button mt-2 w-full text-xs"
+        >
+          Set Date
+        </button>
+
+        {showDateSelector && (
+          <div className="mt-2 p-2 border border-blue-900 rounded">
+            <input
+              type="datetime-local"
+              className="bg-blue-900/30 border border-blue-800 text-white p-1 w-full mb-2 rounded"
+              value={selectedDate.toISOString().slice(0, 16)}
+              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+            />
+            <div className="flex space-x-2">
+              <button
+                onClick={handleApplyDate}
+                className="game-button flex-1 text-xs"
+              >
+                Apply
+              </button>
+              <button
+                onClick={() => setShowDateSelector(false)}
+                className="game-button flex-1 text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mb-3">
         <div className="data-label">Simulation Rate</div>
-        <div
-          className={`data-value font-mono text-xl ${getTimeScaleClass()}`}
-        >
+        <div className={`data-value font-mono text-xl ${getTimeScaleClass()}`}>
           {timeScale === 0 ? "PAUSED" : `${timeScale}x`}
         </div>
 
@@ -542,7 +580,62 @@ const GameHUD: React.FC<GameHUDProps> = ({
           </div>
         )}
       </div>
-      
+
+      {/* Physics system controls */}
+      <div className="mt-4 pt-3 border-t border-blue-900">
+        <div className="data-label">Physics Settings</div>
+        <div className="mt-2">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm">Relativistic Effects</span>
+            <button
+              onClick={() => onToggleRelativisticEffects(!relativisticEffects)}
+              className={`hologram-button text-xs px-3 py-1 ${
+                relativisticEffects ? "hologram-button-primary" : ""
+              }`}
+            >
+              {relativisticEffects ? "Enabled" : "Disabled"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Show Orbits</span>
+            <button
+              onClick={() => onToggleShowOrbits(!showOrbits)}
+              className={`hologram-button text-xs px-3 py-1 ${
+                showOrbits ? "hologram-button-primary" : ""
+              }`}
+            >
+              {showOrbits ? "Visible" : "Hidden"}
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowPhysicsSettings(!showPhysicsSettings)}
+          className="hologram-button w-full mt-2 text-xs"
+        >
+          <span className="hologram-button-text">
+            {showPhysicsSettings
+              ? "Hide Advanced Options"
+              : "Show Advanced Options"}
+          </span>
+        </button>
+
+        {showPhysicsSettings && (
+          <div className="mt-2 p-2 border border-blue-900 rounded">
+            <div className="text-xs text-cyan-400 mb-2">
+              Relativistic effects include:
+            </div>
+            <ul className="text-xs text-white space-y-1 ml-4 list-disc">
+              <li>Perihelion precession of Mercury</li>
+              <li>Gravitational time dilation</li>
+              <li>Light deflection near massive objects</li>
+              <li>Frame-dragging effects</li>
+            </ul>
+          </div>
+        )}
+      </div>
+
       <div className="mt-3 pt-3 border-t border-blue-900">
         <div className="text-xs text-cyan-400">
           {timeScale === 0
@@ -592,24 +685,62 @@ const GameHUD: React.FC<GameHUDProps> = ({
           <div className="space-y-2">
             <div>
               <div className="text-cyan-400">Free Flight</div>
-              <div className="text-white text-sm">Manual control of spacecraft</div>
+              <div className="text-white text-sm">
+                Manual control of spacecraft
+              </div>
             </div>
             <div>
               <div className="text-cyan-400">Follow Mode</div>
-              <div className="text-white text-sm">Automatically follow planet</div>
+              <div className="text-white text-sm">
+                Automatically follow planet
+              </div>
             </div>
             <div>
               <div className="text-cyan-400">Orbit Mode</div>
-              <div className="text-white text-sm">Establish stable orbit around planet</div>
+              <div className="text-white text-sm">
+                Establish stable orbit around planet
+              </div>
             </div>
             <div>
               <div className="text-cyan-400">Autopilot</div>
-              <div className="text-white text-sm">Computer plots optimal course to target</div>
+              <div className="text-white text-sm">
+                Computer plots optimal course to target
+              </div>
             </div>
             <div>
               <div className="text-cyan-400">Warp Drive</div>
-              <div className="text-white text-sm">FTL travel between distant locations</div>
+              <div className="text-white text-sm">
+                FTL travel between distant locations
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Physics information section */}
+      <div className="hologram-panel-dark p-4 mt-4">
+        <h3 className="text-lg text-cyan-300 mb-3">Physics Simulation</h3>
+        <div className="space-y-2 text-sm">
+          <p className="text-white">
+            This simulator uses accurate Keplerian orbital mechanics with
+            relativistic corrections based on Einstein's General Relativity.
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-3">
+            <div className="text-cyan-400">Relativistic Effects:</div>
+            <div className="text-white">
+              {relativisticEffects ? "Enabled" : "Disabled"}
+            </div>
+
+            <div className="text-cyan-400">Orbit Visualization:</div>
+            <div className="text-white">
+              {showOrbits ? "Visible" : "Hidden"}
+            </div>
+
+            <div className="text-cyan-400">Time Scale:</div>
+            <div className="text-white">{timeScale}x</div>
+
+            <div className="text-cyan-400">Current Date:</div>
+            <div className="text-white">{currentDate.split(" ")[0]}</div>
           </div>
         </div>
       </div>
@@ -642,20 +773,16 @@ const GameHUD: React.FC<GameHUDProps> = ({
             {showHelp ? "Close Help" : "Help"}
           </button>
         </div>
-        
+
         {/* Central autopilot/warp status indicator */}
         {(autopilotProgress > 0 || warpProgress > 0) && (
           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
             <div
               className={`text-2xl font-bold ${
-                warpProgress > 0
-                  ? "text-yellow-300"
-                  : "text-cyan-300"
+                warpProgress > 0 ? "text-yellow-300" : "text-cyan-300"
               }`}
             >
-              {warpProgress > 0
-                ? "WARP DRIVE ACTIVE"
-                : "AUTOPILOT ENGAGED"}
+              {warpProgress > 0 ? "WARP DRIVE ACTIVE" : "AUTOPILOT ENGAGED"}
             </div>
             <div className="text-lg">
               {currentPlanet && `Destination: ${currentPlanet.name}`}
@@ -666,12 +793,10 @@ const GameHUD: React.FC<GameHUDProps> = ({
                   className="progress-bar-fill"
                   style={{
                     width: `${
-                      (warpProgress > 0
-                        ? warpProgress
-                        : autopilotProgress) * 100
+                      (warpProgress > 0 ? warpProgress : autopilotProgress) *
+                      100
                     }%`,
-                    backgroundColor:
-                      warpProgress > 0 ? "#f59e0b" : "#60dfff",
+                    backgroundColor: warpProgress > 0 ? "#f59e0b" : "#60dfff",
                   }}
                 ></div>
               </div>
@@ -683,14 +808,14 @@ const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* Destination Selector Modal */}
         {showDestinationSelector && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="game-panel w-96 max-h-[80vh]">
               <div className="game-panel-header">
                 <div className="game-panel-title">Select Destination</div>
-                <button 
+                <button
                   onClick={() => setShowDestinationSelector(false)}
                   className="game-panel-button"
                 >
@@ -706,23 +831,23 @@ const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* Planet Info Modal */}
         {showPlanetInfo && mapSelectedPlanet && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="game-panel w-[700px] max-h-[80vh]">
               <div className="game-panel-header">
-                <div className="game-panel-title">{mapSelectedPlanet.name} Information</div>
-                <button 
+                <div className="game-panel-title">
+                  {mapSelectedPlanet.name} Information
+                </div>
+                <button
                   onClick={() => setShowPlanetInfo(false)}
                   className="game-panel-button"
                 >
                   ✕
                 </button>
               </div>
-              <div className="game-panel-content">
-                {planetInfoPanel}
-              </div>
+              <div className="game-panel-content">{planetInfoPanel}</div>
             </div>
           </div>
         )}
