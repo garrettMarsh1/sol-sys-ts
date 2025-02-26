@@ -1,170 +1,86 @@
-import * as THREE from 'three';
-import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface'
+// src/app/components/planets/Mars.ts
+import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
+import { BasePlanet } from "./BasePlanet";
 
-function degToRad(degrees: number): number {
-    return degrees * (Math.PI / 180);
-}
+class Mars extends BasePlanet {
+  // Identification
+  public name: string = "Mars";
 
-class Mars implements Planet{
-    public name: string;
-    public position: THREE.Vector3;
-    public velocity: THREE.Vector3;
-    public mass: number;
-    public diameter: number;
-    public density: number;
-    public gravity: number;
-    public escapeVelocity: number;
-    public rotationPeriod: number;
-    public lengthOfDay: number;
-    public distanceFromSun: number;
-    public perihelion: number;
-    public aphelion: number;
-    public orbitalPeriod: number;
-    public orbitalVelocity: number;
-    public orbitalInclination: number;
-    public orbitalEccentricity: number;
-    public obliquityToOrbit: number;
-    public meanTemperature: number;
-    public surfacePressure: number;
-    public numberOfMoons: number;
-    public hasRingSystem: boolean;
-    public hasGlobalMagneticField: boolean;
-    public texture: THREE.Texture;
-    public semiMajorAxis: number;
-    public semiMinorAxis: number;
-    public eccentricity: number;
-    public meanAnomaly: number;
-    public centralBody: number;
-    public surfaceTemperature: number;
-    public magneticField: { polar: number; equatorial: number };
-    public atmosphere: { layers: { name: string; temperature: number; pressure: number }[] };
-    public marsParent: THREE.Object3D;
-    public mesh: THREE.Mesh;
-    public lastUpdateTime: number;
-    radius!: number;
-    composition?: Record<string, number> | undefined;
-    albedo?: number | undefined;
-    atmosphereScale?: number | undefined;
-    lightDirection?: THREE.Vector3 | undefined;
+  // Physical properties
+  public mass: number = 6.39e23; // kg
+  public radius: number = 3396; // km
+  public diameter: number = 6792; // km
+  public density: number = 3933; // kg/m³
+  public gravity: number = 3.711; // m/s²
+  public escapeVelocity: number = 5.03; // km/s
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
-        this.name = "Mars";
-        this.position = new THREE.Vector3(227936640, 0, 0);
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        this.lastUpdateTime = Date.now();
-        this.mass = 6.39e23; // kg
-        this.diameter = 6792; // km
-        this.radius = this.diameter / 2;
-        this.density = 3933; // kg/m^3
-        this.gravity = 3.711; // m/s^2
-        this.escapeVelocity = 5.03; // km/s
-        this.rotationPeriod = 1.025; // days
-        this.lengthOfDay = 24.7; // hours
-        this.distanceFromSun = 227936640; // km
-        this.perihelion = 206700000; // km
-        this.aphelion = 249200000; // km
-        this.orbitalPeriod = 686.98; // days
-        this.orbitalVelocity = 24.13; // km/s
-        this.orbitalInclination = 1.85; // degrees
-        this.orbitalEccentricity = 0.0934; // unitless
-        this.obliquityToOrbit = 25.19; // degrees
-        this.meanTemperature = 210; // K
-        this.surfacePressure = 0.006; // Pa
-        this.numberOfMoons = 2; // unitless
-        this.hasRingSystem = false; // boolean
-        this.hasGlobalMagneticField = true; // boolean
-        this.texture = textureLoader.load('/assets/images/mars.jpeg');
-        this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
-        this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
-        this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
-        this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.mass;
-        this.surfaceTemperature = 210; // K
-        this.rotationPeriod = 1.03; // days
-        this.magneticField = {
-            polar: 2e-5,
-            equatorial: 4e-5
-        };
-        this.atmosphere = {
-            layers: [
-                {
-                    name: "troposphere",
-                    temperature: 210,
-                    pressure: 0.006
-                },
-                {
-                    name: "stratosphere",
-                    temperature: 216,
-                    pressure: 22632
-                },
-                {
-                    name: "mesosphere",
-                    temperature: 186,
-                    pressure: 5474
-                },
-                {
-                    name: "thermosphere",
-                    temperature: 186,
-                    pressure: 5474
-                }
-            ]
-        };
+  // Rotation parameters
+  public rotationPeriod: number = 1.025; // days (sidereal)
+  public lengthOfDay: number = 24.7; // hours
+  public obliquityToOrbit: number = 25.19; // degrees (axial tilt)
 
-        this.marsParent = new THREE.Object3D();
-        this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.diameter / 2, 64, 64),
-            new THREE.MeshPhongMaterial({
-                map: this.texture
-            })
-        );
-        this.mesh.name = this.name;
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-        this.marsParent.add(this.mesh);
+  // Orbital parameters (Keplerian elements)
+  public distanceFromSun: number = 227936640; // km (average)
+  public perihelion: number = 206700000; // km (closest approach to Sun)
+  public aphelion: number = 249200000; // km (furthest from Sun)
+  public semiMajorAxis: number = 227936640; // km (a) - size of the orbit
+  public semiMinorAxis: number = 226936000; // km (b) - width of the orbit
+  public eccentricity: number = 0.0934; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
+  public orbitalPeriod: number = 686.98; // days (sidereal period)
+  public orbitalVelocity: number = 24.13; // km/s (average)
+  public orbitalInclination: number = 1.85; // degrees (i) - tilt of orbital plane
+  public orbitalEccentricity: number = 0.0934; // unitless - same as eccentricity
 
-        this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
+  // Extended orbital elements (for 3D orbits and relativity)
+  public longitudeOfAscendingNode: number = 49.58; // degrees (Ω)
+  public argumentOfPerihelion: number = 286.5; // degrees (ω)
 
-        // Apply axial tilt
-        this.mesh.rotation.x = degToRad(this.obliquityToOrbit);
-        
-        // Note: Don't add to scene here - MainScene.tsx will handle that
-        console.log(`Created ${this.name} planet at:`, this.position);
-    }
+  // Environmental properties
+  public meanTemperature: number = 210; // K
+  public surfaceTemperature: number = 210; // K
+  public surfacePressure: number = 0.006; // Pa
 
+  // System properties
+  public numberOfMoons: number = 2;
+  public hasRingSystem: boolean = false;
+  public hasGlobalMagneticField: boolean = true;
+  public centralBody: number = 1.989e30; // Sun's mass
 
-    solveKepler(M: number, e: number): number {
-        let E = M;
-        let delta = 1;
-        while (delta > 1e-6) {
-            delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-            E -= delta;
-        }
-        return E;
-    }
+  // Physical appearance
+  public texture: THREE.Texture;
 
-    calculateOrbit() {
-        const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
-        this.lastUpdateTime = Date.now();
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) {
+    super(renderer, scene, camera);
 
-        const meanMotion = 2 * Math.PI / this.orbitalPeriod; // Mean motion (radians per day)
-        this.meanAnomaly += meanMotion * (elapsedTime / 86400); // Update mean anomaly
+    // Load Mars texture
+    this.texture = textureLoader.load("/assets/images/mars.jpeg");
 
-        const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
-        const x = this.semiMajorAxis * (Math.cos(E) - this.eccentricity);
-        const y = this.semiMajorAxis * Math.sqrt(1 - this.eccentricity ** 2) * Math.sin(E);
-        const z = 0; // Assuming orbit in the xy-plane
+    // Initialize the planet
+    this.initialize();
 
-        this.mesh.position.set(x, y, z);
-        this.position = this.mesh.position.clone(); // Update position property
-        this.marsParent.position.set(x, y, z);
-    }
+    // Mars has small relativistic precession
+    this.hasRelativisticPrecession = true;
 
-    update(dt: number) {
-        this.calculateOrbit();
-        const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
-        this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed
-    }
+    console.log(
+      `Created ${this.name} planet with advanced physics at:`,
+      this.position
+    );
+  }
+
+  /**
+   * Override applyAxialTilt to ensure correct 25.19° tilt
+   */
+  public applyAxialTilt(): void {
+    super.applyAxialTilt();
+
+    // Apply any additional Mars-specific orientation adjustments here if needed
+    // Mars has a substantial axial tilt similar to Earth
+  }
 }
 
 export default Mars;

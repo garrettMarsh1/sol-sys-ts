@@ -1,9 +1,9 @@
 // src/app/components/planets/Earth.ts
-import * as THREE from 'three';
-import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface';
+import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
+import { BasePlanet } from "./BasePlanet";
 
+// Preserve the original GLSL shaders
 const vertexShader = `
 precision highp float;
 varying vec3 vNormal;
@@ -39,203 +39,212 @@ void main() {
 }
 `;
 
-class Earth implements Planet {
-    public name: string;
-    public position: THREE.Vector3;
-    public velocity: THREE.Vector3;
-    public mass: number;
-    public diameter: number;
-    public density: number;
-    public gravity: number;
-    public escapeVelocity: number;
-    public rotationPeriod: number;
-    public lengthOfDay: number;
-    public distanceFromSun: number;
-    public perihelion: number;
-    public aphelion: number;
-    public orbitalPeriod: number;
-    public orbitalVelocity: number;
-    public orbitalInclination: number;
-    public orbitalEccentricity: number;
-    public obliquityToOrbit: number;
-    public meanTemperature: number;
-    public surfacePressure: number;
-    public numberOfMoons: number;
-    public hasRingSystem: boolean;
-    public hasGlobalMagneticField: boolean;
-    public texture: THREE.Texture;
-    public nightTexture: THREE.Texture;
-    public semiMajorAxis: number;
-    public semiMinorAxis: number;
-    public eccentricity: number;
-    public meanAnomaly: number;
-    public centralBody: number;
-    public surfaceTemperature: number;
-    public magneticField: { polar: number; equatorial: number };
-    public atmosphere: { layers: { name: string; temperature: number; pressure: number }[] };
-    public earthParent: THREE.Object3D;
-    public material: THREE.ShaderMaterial;
-    public mesh: THREE.Mesh;
-    public lastUpdateTime: number;
-    public radius: number;
-    composition?: Record<string, number> | undefined;
-    albedo?: number | undefined;
-    atmosphereScale?: number | undefined;
-    lightDirection?: THREE.Vector3 | undefined;
+/**
+ * Earth planet with realistic physics and day/night shader effects
+ */
+class Earth extends BasePlanet {
+  // Identification
+  public name: string = "Earth";
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
-        this.name = "Earth";
-        this.position = new THREE.Vector3(149597890, 0, 0);
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        this.mass = 5.972e24; // kg
-        this.diameter = 12742; // km
-        this.radius = this.diameter / 2;
-        this.density = 5514; // kg/m^3
-        this.gravity = 9.807; // m/s^2
-        this.escapeVelocity = 11.186; // km/s
-        this.rotationPeriod = 1; // days
-        this.lengthOfDay = 24; // hours
-        this.distanceFromSun = 149597890; // km
-        this.perihelion = 147095000; // km
-        this.aphelion = 152100000; // km
-        this.orbitalPeriod = 365.256; // days
-        this.orbitalVelocity = 29.78; // km/s
-        this.orbitalInclination = 0.0; // degrees
-        this.orbitalEccentricity = 0.0167; // unitless
-        this.obliquityToOrbit = 23.439; // degrees
-        this.meanTemperature = 288; // K
-        this.surfacePressure = 101325; // Pa
-        this.numberOfMoons = 1; // unitless
-        this.hasRingSystem = false; // boolean
-        this.hasGlobalMagneticField = true; // boolean
-        
-        // Using our enhanced texture loader
-        this.texture = textureLoader.load('/assets/images/earth.jpeg');
-        this.nightTexture = textureLoader.load('/assets/images/8k_earth_nightmap.jpeg');
-        
-        this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
-        this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
-        this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
-        this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.position;
-        this.surfaceTemperature = 288; // K
-        this.rotationPeriod = 1; // days
-        this.magneticField = {
-            polar: 2e-5,
-            equatorial: 4e-5
-        };
-        this.atmosphere = {
-            layers: [
-                {
-                    name: "troposphere",
-                    temperature: 288,
-                    pressure: 101325
-                },
-                {
-                    name: "stratosphere",
-                    temperature: 216,
-                    pressure: 22632
-                },
-                {
-                    name: "mesosphere",
-                    temperature: 186,
-                    pressure: 5474
-                },
-                {
-                    name: "thermosphere",
-                    temperature: 186,
-                    pressure: 5474
-                }
-            ]
-        };
-        
-        this.earthParent = new THREE.Object3D();
-        
-        // Use a basic material as fallback if shader fails
-        try {
-            this.material = new THREE.ShaderMaterial({
-                vertexShader: vertexShader,
-                fragmentShader: fragmentShader,
-                uniforms: {
-                    earthMap: { value: this.texture },
-                    nightMap: { value: this.nightTexture },
-                    lightPos: { value: new THREE.Vector3(0, 0, 0) } // Sun position
-                }
-            });
-        } catch (error) {
-            console.error("Failed to create Earth shader, using fallback material:", error);
-            // Fallback to a basic material
-            this.material = new THREE.MeshPhongMaterial({
-                map: this.texture
-            }) as any;
-        }
+  // Physical properties
+  public mass: number = 5.972e24; // kg
+  public radius: number = 6371; // km
+  public diameter: number = 12742; // km
+  public density: number = 5514; // kg/m³
+  public gravity: number = 9.807; // m/s²
+  public escapeVelocity: number = 11.186; // km/s
 
-        // Create the mesh with proper geometry
-        const geometry = new THREE.SphereGeometry(this.diameter / 2, 64, 64);
-        this.mesh = new THREE.Mesh(geometry, this.material);
-        this.mesh.name = this.name;
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+  // Rotation parameters
+  public rotationPeriod: number = 0.99726; // days (sidereal)
+  public lengthOfDay: number = 24.0; // hours
+  public obliquityToOrbit: number = 23.439; // degrees (axial tilt)
 
-        this.earthParent = new THREE.Object3D();
-        this.earthParent.add(this.mesh);
-        this.earthParent.lookAt(new THREE.Vector3(10, 0, 0));
+  // Orbital parameters (Keplerian elements)
+  public distanceFromSun: number = 149597890; // km (average)
+  public perihelion: number = 147095000; // km (closest approach to Sun)
+  public aphelion: number = 152100000; // km (furthest from Sun)
+  public semiMajorAxis: number = 149597890; // km (a) - size of the orbit
+  public semiMinorAxis: number = 149577000; // km (b) - width of the orbit
+  public eccentricity: number = 0.0167; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
+  public orbitalPeriod: number = 365.256; // days (sidereal period)
+  public orbitalVelocity: number = 29.78; // km/s (average)
+  public orbitalInclination: number = 0.0; // degrees (i) - tilt of orbital plane
+  public orbitalEccentricity: number = 0.0167; // unitless - same as eccentricity
 
-        this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
-        this.lastUpdateTime = Date.now();
-        
-        // Add mesh to the scene
-        scene.add(this.mesh);
-        
-        // Log successful creation
-        console.log(`Created ${this.name} planet at:`, this.position);
+  // Extended orbital elements (for 3D orbits and relativity)
+  public longitudeOfAscendingNode: number = 174.873; // degrees (Ω)
+  public argumentOfPerihelion: number = 288.064; // degrees (ω)
+
+  // Environmental properties
+  public meanTemperature: number = 288; // K
+  public surfaceTemperature: number = 288; // K
+  public surfacePressure: number = 101325; // Pa
+
+  // System properties
+  public numberOfMoons: number = 1;
+  public hasRingSystem: boolean = false;
+  public hasGlobalMagneticField: boolean = true;
+  public centralBody: number = 1.989e30; // Sun's mass
+
+  // Earth-specific properties
+  public magneticField: { polar: number; equatorial: number } = {
+    polar: 2e-5,
+    equatorial: 4e-5,
+  };
+  public atmosphere: {
+    layers: { name: string; temperature: number; pressure: number }[];
+  } = {
+    layers: [
+      {
+        name: "troposphere",
+        temperature: 288,
+        pressure: 101325,
+      },
+      {
+        name: "stratosphere",
+        temperature: 216,
+        pressure: 22632,
+      },
+      {
+        name: "mesosphere",
+        temperature: 186,
+        pressure: 5474,
+      },
+      {
+        name: "thermosphere",
+        temperature: 186,
+        pressure: 5474,
+      },
+    ],
+  };
+
+  // Textures
+  public texture: THREE.Texture;
+  private nightTexture: THREE.Texture;
+  private shaderMaterial: THREE.ShaderMaterial;
+
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) {
+    super(renderer, scene, camera);
+
+    // Load Earth textures
+    this.texture = textureLoader.load("/assets/images/earth.jpeg");
+    this.nightTexture = textureLoader.load(
+      "/assets/images/8k_earth_nightmap.jpeg"
+    );
+
+    // Create shader material for day/night effect
+    this.shaderMaterial = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      uniforms: {
+        earthMap: { value: this.texture },
+        nightMap: { value: this.nightTexture },
+        lightPos: { value: new THREE.Vector3(0, 0, 0) }, // Sun position
+      },
+    });
+
+    // Custom initialization to use shader material
+    this.initializeWithShader();
+
+    // Enable relativistic effects for Earth
+    this.hasRelativisticPrecession = true;
+
+    console.log(
+      `Created ${this.name} planet with shader effects at:`,
+      this.position
+    );
+  }
+
+  /**
+   * Custom initialization to use shader material instead of standard BasePlanet initialization
+   */
+  private initializeWithShader(): void {
+    // Create the planet group that will handle proper transformations
+    this.planetGroup = new THREE.Group();
+    this.planetGroup.name = `${this.name}-group`;
+
+    // Create Earth mesh with shader material
+    const geometry = new THREE.SphereGeometry(this.radius, 64, 64);
+    this.mesh = new THREE.Mesh(geometry, this.shaderMaterial);
+    this.mesh.name = this.name;
+
+    // Add the mesh to the group
+    this.planetGroup.add(this.mesh);
+
+    // Set initial position
+    this.position = new THREE.Vector3(this.distanceFromSun, 0, 0);
+    this.planetGroup.position.copy(this.position);
+
+    // Calculate initial velocity based on orbital parameters
+    this.calculateInitialVelocity();
+
+    // Initialize orbital parameters through OrbitalMechanics
+    this.initializeOrbitalElements();
+
+    // Set axial tilt (obliquity)
+    this.applyAxialTilt();
+
+    // Add to scene
+    this.scene.add(this.planetGroup);
+  }
+
+  /**
+   * Calculate initial velocity based on orbital parameters
+   * (Private method to replicate functionality from BasePlanet)
+   */
+  public calculateInitialVelocity(): void {
+    // Set initial mean anomaly
+    this.meanAnomaly = 0;
+
+    // Calculate eccentric anomaly
+    const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
+
+    // For now, use the provided orbital velocity in the y-direction (tangential)
+    this.velocity = new THREE.Vector3(0, this.orbitalVelocity, 0);
+  }
+
+  /**
+   * Initialize orbital elements
+   * (Private method to replicate functionality from BasePlanet)
+   */
+  private initializeOrbitalElements(): void {
+    // Initialize orbital parameters from OrbitalMechanics
+    if (!this.semiMinorAxis) {
+      this.semiMinorAxis =
+        this.semiMajorAxis *
+        Math.sqrt(1 - this.eccentricity * this.eccentricity);
     }
 
-    calculateForce() {
-        const sunMass = Sun.mass;
-        const distance = this.mesh.position.distanceTo(new THREE.Vector3(0, 0, 0));
-        const forceMagnitude = (6.67430e-11 * sunMass * this.mass) / (distance * distance);
-        const forceDirection = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), this.mesh.position).normalize();
-        return forceDirection.multiplyScalar(forceMagnitude);
+    // Set default values for missing orbital elements
+    if (this.longitudeOfAscendingNode === undefined) {
+      this.longitudeOfAscendingNode = 0;
     }
 
-    solveKepler(M: number, e: number) {
-        let E = M;
-        let delta = 1;
-        while (delta > 1e-6) {
-            delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-            E -= delta;
-        }
-        return E;
+    if (this.argumentOfPerihelion === undefined) {
+      this.argumentOfPerihelion = 0;
     }
 
-    calculateOrbit() {
-        const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
-        this.lastUpdateTime = Date.now();
+    // Convert inclination to radians internally
+    this.orbitalInclinationRad = this.orbitalInclination * (Math.PI / 180);
+  }
 
-        const meanMotion = 2 * Math.PI / this.orbitalPeriod; // Mean motion (radians per day)
-        this.meanAnomaly += meanMotion * (elapsedTime / 86400); // Update mean anomaly
+  /**
+   * Override update to update the shader uniforms
+   * @param dt Time step in seconds
+   */
+  public update(dt: number): void {
+    // Use BasePlanet's update for orbital mechanics
+    super.update(dt);
 
-        const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
-        const x = this.semiMajorAxis * (Math.cos(E) - this.eccentricity);
-        const y = this.semiMajorAxis * Math.sqrt(1 - this.eccentricity ** 2) * Math.sin(E);
-        const z = 0; // Assuming orbit in the xy-plane
-
-        this.mesh.position.set(x, y, z);
-        this.position = this.mesh.position.clone(); // Keep position updated
-        this.earthParent.position.set(x, y, z);
+    // Update the light source position (Sun)
+    if (this.shaderMaterial.uniforms) {
+      this.shaderMaterial.uniforms.lightPos.value.set(0, 0, 0);
     }
-
-    update(dt: number) {
-        this.calculateOrbit();
-        
-        // Update the light source position (Sun)
-        if (this.material instanceof THREE.ShaderMaterial) {
-            this.material.uniforms.lightPos.value.set(0, 0, 0);
-        }
-        
-        // Add Earth rotation
-        this.mesh.rotation.y += (2 * Math.PI) / (24 * 60 * 60 * dt * 100); // Scaled rotation for better visibility
-    }
+  }
 }
 
 export default Earth;

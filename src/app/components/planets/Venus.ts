@@ -1,140 +1,107 @@
-import * as THREE from 'three';
-import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface'
+// src/app/components/planets/Venus.ts
+import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
+import { BasePlanet } from "./BasePlanet";
 
+class Venus extends BasePlanet {
+  // Identification
+  public name: string = "Venus";
 
-class Venus implements Planet{
-    public name: string;
-    public position: THREE.Vector3;
-    public velocity: THREE.Vector3;
-    public mass: number;
-    public diameter: number;
-    public density: number;
-    public gravity: number;
-    public escapeVelocity: number;
-    public rotationPeriod: number;
-    public lengthOfDay: number;
-    public distanceFromSun: number;
-    public perihelion: number;
-    public aphelion: number;
-    public orbitalPeriod: number;
-    public orbitalVelocity: number;
-    public orbitalInclination: number;
-    public orbitalEccentricity: number;
-    public obliquityToOrbit: number;
-    public meanTemperature: number;
-    public surfacePressure: number;
-    public numberOfMoons: number;
-    public hasRingSystem: boolean;
-    public hasGlobalMagneticField: boolean;
-    public texture: THREE.Texture;
-    public atmosphereTexture: THREE.Texture;
-    public semiMajorAxis: number;
-    public semiMinorAxis: number;
-    public eccentricity: number;
-    public meanAnomaly: number;
-    public centralBody: number;
-    public surfaceTemperature: number;
-    public venusParent: THREE.Object3D;
-    public mesh: THREE.Mesh;
-    public lastUpdateTime: number;
-    radius!: number;
-    magneticField?: { polar: number; equatorial: number; } | undefined;
-    atmosphere?: { layers: { name: string; temperature: number; pressure: number; }[]; } | undefined;
-    composition?: Record<string, number> | undefined;
-    albedo?: number | undefined;
-    atmosphereScale?: number | undefined;
-    lightDirection?: THREE.Vector3 | undefined;
+  // Physical properties
+  public mass: number = 4.867e24; // kg
+  public radius: number = 6052; // km
+  public diameter: number = 12104; // km
+  public density: number = 5243; // kg/m³
+  public gravity: number = 8.87; // m/s²
+  public escapeVelocity: number = 10.36; // km/s
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
-        this.name = "Venus";
-        this.position = new THREE.Vector3(108208930, 0, 0);
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        this.mass = 4.867e24; // kg
-        this.diameter = 12104; // km
-        this.radius = this.diameter / 2;
-        this.density = 5243; // kg/m^3
-        this.gravity = 8.87; // m/s^2
-        this.escapeVelocity = 10.36; // km/s
-        this.rotationPeriod = 243; // days
-        this.lengthOfDay = 5832.5; // hours
-        this.distanceFromSun = 108208930; // km
-        this.perihelion = 107477000; // km
-        this.aphelion = 108939000; // km
-        this.orbitalPeriod = 224.701; // days
-        this.orbitalVelocity = 35.02; // km/s
-        this.orbitalInclination = 3.39; // degrees
-        this.orbitalEccentricity = 0.0067; // unitless
-        this.obliquityToOrbit = 177.36; // degrees
-        this.meanTemperature = 737; // K
-        this.surfacePressure = 92e3; // Pa
-        this.numberOfMoons = 0; // unitless
-        this.hasRingSystem = false; // boolean
-        this.hasGlobalMagneticField = false; // boolean
-        this.texture = textureLoader.load('/assets/images/venus.jpeg');
-        this.atmosphereTexture = textureLoader.load('/assets/images/venusAtmosphere.jpeg');
-        this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
-        this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
-        this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
-        this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.mass;
-        this.surfaceTemperature = 737; // K
-        this.rotationPeriod = 243; // days
-        this.lengthOfDay = 5832.5; // hours
+  // Rotation parameters
+  public rotationPeriod: number = 243; // days (sidereal)
+  public lengthOfDay: number = 5832.5; // hours
+  public obliquityToOrbit: number = 177.36; // degrees (axial tilt)
 
-        this.venusParent = new THREE.Object3D();
+  // Orbital parameters (Keplerian elements)
+  public distanceFromSun: number = 108208930; // km (average)
+  public perihelion: number = 107477000; // km (closest approach to Sun)
+  public aphelion: number = 108939000; // km (furthest from Sun)
+  public semiMajorAxis: number = 108208930; // km (a) - size of the orbit
+  public semiMinorAxis: number = 108207740; // km (b) - width of the orbit
+  public eccentricity: number = 0.0067; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
+  public orbitalPeriod: number = 224.701; // days (sidereal period)
+  public orbitalVelocity: number = 35.02; // km/s (average)
+  public orbitalInclination: number = 3.39; // degrees (i) - tilt of orbital plane
+  public orbitalEccentricity: number = 0.0067; // unitless - same as eccentricity
 
-        this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.diameter / 2, 64, 64),
-            new THREE.MeshPhongMaterial({
-                map: this.atmosphereTexture
-            })
-        );
-        this.mesh.name = this.name;
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-        this.venusParent.add(this.mesh);
+  // Extended orbital elements (for 3D orbits and relativity)
+  public longitudeOfAscendingNode: number = 76.68; // degrees (Ω)
+  public argumentOfPerihelion: number = 54.85; // degrees (ω)
 
-        this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
-        this.lastUpdateTime = Date.now();
-        
-        // Note: Don't add to scene here - MainScene.tsx will handle that
-        console.log(`Created ${this.name} planet at:`, this.position);
+  // Environmental properties
+  public meanTemperature: number = 737; // K
+  public surfaceTemperature: number = 737; // K
+  public surfacePressure: number = 92e3; // Pa
+
+  // System properties
+  public numberOfMoons: number = 0;
+  public hasRingSystem: boolean = false;
+  public hasGlobalMagneticField: boolean = false;
+  public centralBody: number = 1.989e30; // Sun's mass
+
+  // Physical appearance
+  public texture: THREE.Texture;
+  private atmosphereTexture: THREE.Texture;
+
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) {
+    super(renderer, scene, camera);
+
+    // Load textures
+    this.texture = textureLoader.load("/assets/images/venus.jpeg");
+    this.atmosphereTexture = textureLoader.load(
+      "/assets/images/venusAtmosphere.jpeg"
+    );
+
+    // Use atmosphere texture for main material
+    const material = new THREE.MeshPhongMaterial({
+      map: this.atmosphereTexture,
+      specular: new THREE.Color(0x333333),
+      shininess: 5,
+    });
+
+    // Initialize the planet with custom material
+    this.initialize();
+
+    // Replace the default material with atmosphere texture
+    if (this.mesh instanceof THREE.Mesh && this.mesh.material) {
+      if (this.mesh.material instanceof THREE.Material) {
+        this.mesh.material.dispose();
+      }
+      this.mesh.material = material;
     }
 
+    // Venus has small but measurable relativistic precession
+    this.hasRelativisticPrecession = true;
 
-    solveKepler(M: number, e: number): number {
-        let E = M;
-        let delta = 1;
-        while (delta > 1e-6) {
-            delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-            E -= delta;
-        }
-        return E;
-    }
+    console.log(
+      `Created ${this.name} planet with advanced physics at:`,
+      this.position
+    );
+  }
 
-    calculateOrbit() {
-        const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
-        this.lastUpdateTime = Date.now();
+  /**
+   * Override updateRotation to handle Venus's retrograde rotation
+   */
+  protected updateRotation(dt: number): void {
+    // Venus has retrograde rotation (clockwise)
+    const rotationPeriodSeconds = this.rotationPeriod * 86400; // Convert days to seconds
+    const rotationSpeed = (2 * Math.PI) / rotationPeriodSeconds;
 
-        const meanMotion = 2 * Math.PI / this.orbitalPeriod; // Mean motion (radians per day)
-        this.meanAnomaly += meanMotion * (elapsedTime / 86400); // Update mean anomaly
-
-        const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
-        const x = this.semiMajorAxis * (Math.cos(E) - this.eccentricity);
-        const y = this.semiMajorAxis * Math.sqrt(1 - this.eccentricity ** 2) * Math.sin(E);
-        const z = 0; // Assuming orbit in the xy-plane
-
-        this.mesh.position.set(x, y, z);
-        this.position = this.mesh.position.clone(); // Update position property
-        this.venusParent.position.set(x, y, z);
-    }
-
-    update(dt: number) {
-        this.calculateOrbit();
-        const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
-        this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed
-    }
+    // Apply rotation with negative value for retrograde motion
+    this.mesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), -rotationSpeed * dt);
+  }
 }
 
 export default Venus;

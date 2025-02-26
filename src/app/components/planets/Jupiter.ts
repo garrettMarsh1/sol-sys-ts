@@ -1,170 +1,85 @@
-import * as THREE from 'three';
-import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface'
+// src/app/components/planets/Jupiter.ts
+import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
+import { BasePlanet } from "./BasePlanet";
 
+class Jupiter extends BasePlanet {
+  // Identification
+  public name: string = "Jupiter";
 
-class Jupiter implements Planet{
-    public name: string;
-    public position: THREE.Vector3;
-    public velocity: THREE.Vector3;
-    public mass: number;
-    public radius: number;
-    public density: number;
-    public gravity: number;
-    public escapeVelocity: number;
-    public rotationPeriod: number;
-    public lengthOfDay: number;
-    public distanceFromSun: number;
-    public perihelion: number;
-    public aphelion: number;
-    public orbitalPeriod: number;
-    public orbitalVelocity: number;
-    public orbitalInclination: number;
-    public orbitalEccentricity: number;
-    public obliquityToOrbit: number;
-    public meanTemperature: number;
-    public surfacePressure: number;
-    public numberOfMoons: number;
-    public hasRingSystem: boolean;
-    public hasGlobalMagneticField: boolean;
-    public texture: THREE.Texture;
-    public semiMajorAxis: number;
-    public semiMinorAxis: number;
-    public eccentricity: number;
-    public meanAnomaly: number;
-    public centralBody: number;
-    public surfaceTemperature: number;
-    public magneticField: { polar: number; equatorial: number };
-    public atmosphere: { layers: { name: string; temperature: number; pressure: number }[] };
-    public jupiterParent: THREE.Object3D;
-    public mesh: THREE.Mesh;
-    public lastUpdateTime: number;
-    diameter!: number;
-    composition?: Record<string, number> | undefined;
-    albedo?: number | undefined;
-    atmosphereScale?: number | undefined;
-    lightDirection?: THREE.Vector3 | undefined;
+  // Physical properties
+  public mass: number = 1.898e27; // kg
+  public radius: number = 69911; // km
+  public diameter: number = 139822; // km
+  public density: number = 1326; // kg/m³
+  public gravity: number = 24.79; // m/s²
+  public escapeVelocity: number = 59.5; // km/s
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
-        this.name = 'Jupiter';
-        this.position = new THREE.Vector3(778547200, 0, 0);
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        
-        this.mass = 1.898e27; // kg
-        this.radius = 69911; // km
-        this.density = 1.326; // g/cm^3
-        this.gravity = 24.79; // m/s^2
-        this.escapeVelocity = 59.5; // km/s
-        this.rotationPeriod = 9.925 * 3600; // seconds
-        this.lengthOfDay = 9.925; // hours
-        this.distanceFromSun = 778547200; // km
-        this.perihelion = 740573600; // km
-        this.aphelion = 816520800; // km
-        this.orbitalPeriod = 4332.59 * 86400; // seconds
-        this.orbitalVelocity = 13.07; // km/s
-        this.orbitalInclination = 1.305; // degrees
-        this.orbitalEccentricity = 0.0489; // unitless
-        this.obliquityToOrbit = 3.13; // degrees
-        this.meanTemperature = 165; // K
-        this.surfacePressure = 0; // Pa
-        this.numberOfMoons = 79; // unitless
-        this.hasRingSystem = true; // boolean
-        this.hasGlobalMagneticField = true; // boolean
-        this.texture = textureLoader.load('/assets/images/jupiter.jpeg');
-        this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
-        this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
-        this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
-        this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.mass;
-        this.surfaceTemperature = 165; // K
-        this.rotationPeriod = 0.41354; // days
-        this.magneticField = {
-            polar: 0.0001,
-            equatorial: 0.0002
-        };
-        this.atmosphere = {
-            layers: [
-                {
-                    name: "troposphere",
-                    temperature: 165,
-                    pressure: 0
-                },
-                {
-                    name: "stratosphere",
-                    temperature: 165,
-                    pressure: 0
-                },
-                {
-                    name: "mesosphere",
-                    temperature: 165,
-                    pressure: 0
-                },
-                {
-                    name: "thermosphere",
-                    temperature: 165,
-                    pressure: 0
-                }
-            ]
-        };
+  // Rotation parameters
+  public rotationPeriod: number = 0.41354; // days (sidereal)
+  public lengthOfDay: number = 9.925; // hours
+  public obliquityToOrbit: number = 3.13; // degrees (axial tilt)
 
-        this.jupiterParent = new THREE.Object3D();
-        this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.radius, 96, 96),
-            new THREE.MeshLambertMaterial({
-                map: this.texture
-            })
-        );
+  // Orbital parameters (Keplerian elements)
+  public distanceFromSun: number = 778547200; // km (average)
+  public perihelion: number = 740573600; // km (closest approach to Sun)
+  public aphelion: number = 816520800; // km (furthest from Sun)
+  public semiMajorAxis: number = 778547200; // km (a) - size of the orbit
+  public semiMinorAxis: number = 777500000; // km (b) - width of the orbit
+  public eccentricity: number = 0.0489; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
+  public orbitalPeriod: number = 4332.59; // days (sidereal period)
+  public orbitalVelocity: number = 13.07; // km/s (average)
+  public orbitalInclination: number = 1.305; // degrees (i) - tilt of orbital plane
+  public orbitalEccentricity: number = 0.0489; // unitless - same as eccentricity
 
-        this.mesh.name = this.name;
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+  // Extended orbital elements (for 3D orbits and relativity)
+  public longitudeOfAscendingNode: number = 100.56; // degrees (Ω)
+  public argumentOfPerihelion: number = 273.88; // degrees (ω)
 
-        this.jupiterParent.add(this.mesh);
-        
-        // Rotate the Jupiter mesh to match the orbital inclination
-        this.mesh.rotation.x = this.orbitalInclination * (-Math.PI / 180);
+  // Environmental properties
+  public meanTemperature: number = 165; // K
+  public surfaceTemperature: number = 165; // K (no solid surface)
+  public surfacePressure: number = 0; // Pa (gas giant)
 
-        this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
+  // System properties
+  public numberOfMoons: number = 79;
+  public hasRingSystem: boolean = true;
+  public hasGlobalMagneticField: boolean = true;
+  public centralBody: number = 1.989e30; // Sun's mass
 
-        this.lastUpdateTime = Date.now();
-        
-        // Note: Don't add to scene here - MainScene.tsx will handle that
-        console.log(`Created ${this.name} planet at:`, this.position);
-    }
-    
-    solveKepler(M: number, e: number): number {
-        // Solve Kepler's equation for the eccentric anomaly (E) given the mean anomaly (M) and eccentricity (e)
-        let E = M;
-        let delta = 1;
-        while (delta > 1e-6) {
-            delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-            E -= delta;
-        }
-        return E;
-    }
+  // Physical appearance
+  public texture: THREE.Texture;
 
-    calculateOrbit() {
-        const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
-        this.lastUpdateTime = Date.now();
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) {
+    super(renderer, scene, camera);
 
-        const meanMotion = 2 * Math.PI / this.orbitalPeriod; // Mean motion (radians per day)
-        this.meanAnomaly += meanMotion * (elapsedTime / 86400); // Update mean anomaly
+    // Load Jupiter texture
+    this.texture = textureLoader.load("/assets/images/jupiter.jpeg");
 
-        const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
-        const x = this.semiMajorAxis * (Math.cos(E) - this.eccentricity);
-        const y = this.semiMajorAxis * Math.sqrt(1 - this.eccentricity ** 2) * Math.sin(E);
-        const z = 0; // Assuming orbit in the xy-plane
+    // Initialize the planet
+    this.initialize();
 
-        this.mesh.position.set(x, y, z);
-        this.position = this.mesh.position.clone(); // Update position property
-        this.jupiterParent.position.set(x, y, z);
-    }
+    console.log(
+      `Created ${this.name} planet with advanced physics at:`,
+      this.position
+    );
+  }
 
-    update(dt: number) {
-        this.calculateOrbit();
-        const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
-        this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed
-    }
+  /**
+   * Override updateRotation to handle Jupiter's rapid rotation
+   */
+  protected updateRotation(dt: number): void {
+    // Jupiter rotates very quickly - once every ~10 hours
+    const rotationPeriodSeconds = this.rotationPeriod * 86400; // Convert days to seconds
+    const rotationSpeed = (2 * Math.PI) / rotationPeriodSeconds;
+
+    // Apply rotation
+    this.mesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), rotationSpeed * dt);
+  }
 }
 
 export default Jupiter;

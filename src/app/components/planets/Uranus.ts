@@ -1,157 +1,96 @@
-import * as THREE from 'three';
-import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface'
+// src/app/components/planets/Uranus.ts
+import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
+import { BasePlanet } from "./BasePlanet";
 
-class Uranus implements Planet{
-    public name: string;
-    public position: THREE.Vector3;
-    public velocity: THREE.Vector3;
-    public radius: number;
-    public mass: number;
-    public density: number;
-    public gravity: number;
-    public escapeVelocity: number;
-    public rotationPeriod: number;
-    public lengthOfDay: number;
-    public distanceFromSun: number;
-    public perihelion: number;
-    public aphelion: number;
-    public orbitalPeriod: number;
-    public orbitalVelocity: number;
-    public orbitalInclination: number;
-    public orbitalEccentricity: number;
-    public obliquityToOrbit: number;
-    public meanTemperature: number;
-    public surfacePressure: number;
-    public numberOfMoons: number;
-    public hasRingSystem: boolean;
-    public hasGlobalMagneticField: boolean;
-    public semiMajorAxis: number;
-    public semiMinorAxis: number;
-    public eccentricity: number;
-    public meanAnomaly: number;
-    public centralBody: number;
-    public composition: Record<string, number>;
-    public atmosphere: { layers: { name: string; temperature: number; pressure: number }[] };
-    public albedo: number;
-    public atmosphereScale: number;
-    public lightDirection: THREE.Vector3;
-    public uranusParent: THREE.Object3D;
-    public mesh: THREE.Mesh;
-    public lastUpdateTime: number;
-    public texture: THREE.Texture;
-    surfaceTemperature: number;
-    diameter!: number;
-    magneticField: { polar: number; equatorial: number; };
+class Uranus extends BasePlanet {
+  // Identification
+  public name: string = "Uranus";
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
-        this.name = 'Uranus';
-        this.position = new THREE.Vector3(2870658186, 0, 0);
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        this.radius = 25559;
-        this.diameter = this.radius * 2;
-        this.mass = 8.681e25;
-        this.density = 1271;
-        this.gravity = 8.87;
-        this.escapeVelocity = 21.3;
-        this.rotationPeriod = 17.24;
-        this.lengthOfDay = 17.24;
-        this.distanceFromSun = 2870658186;
-        this.perihelion = 2743000000;
-        this.aphelion = 2998400000;
-        this.orbitalPeriod = 30589.75;
-        this.orbitalVelocity = 6.81;
-        this.orbitalInclination = 0.772;
-        this.orbitalEccentricity = 0.046381;
-        this.obliquityToOrbit = 97.77;
-        this.meanTemperature = -195;
-        this.surfacePressure = 0;
-        this.numberOfMoons = 27;
-        this.hasRingSystem = true;
-        this.hasGlobalMagneticField = true;
-        this.texture = textureLoader.load('/assets/images/uranus.jpeg');
-        this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
-        this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
-        this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
-        this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.mass;
-        this.surfaceTemperature = 77; // K
-        this.magneticField = {
-            polar: 0.0001,
-            equatorial: 0.0002
-        };
-        this.composition = {
-            hydrogen: 0.76,
-            helium: 0.24,
-            methane: 0.01,
-            water: 0.01,
-            ammonia: 0.01,
-            other: 0.01
-        };
-        this.atmosphere = {
-            layers: [
-                { name: "troposphere", temperature: 77, pressure: 0 },
-                { name: "stratosphere", temperature: 77, pressure: 0 },
-                { name: "mesosphere", temperature: 77, pressure: 0 },
-                { name: "thermosphere", temperature: 77, pressure: 0 }
-            ]
-        };
-        this.albedo = 0.5;
-        this.atmosphereScale = 0.1;
-        this.lightDirection = new THREE.Vector3(1, 1, 1);
+  // Physical properties
+  public mass: number = 8.681e25; // kg
+  public radius: number = 25559; // km
+  public diameter: number = 51118; // km
+  public density: number = 1271; // kg/m³
+  public gravity: number = 8.87; // m/s²
+  public escapeVelocity: number = 21.3; // km/s
 
-        this.uranusParent = new THREE.Object3D();
-        this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.radius, 96, 96),
-            new THREE.MeshPhongMaterial({
-                map: this.texture
-            })
-        );
+  // Rotation parameters
+  public rotationPeriod: number = 0.71833; // days (sidereal)
+  public lengthOfDay: number = 17.24; // hours
+  public obliquityToOrbit: number = 97.77; // degrees (axial tilt)
 
-        this.mesh.name = this.name;
-        this.uranusParent.add(this.mesh);
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-        this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
-        this.lastUpdateTime = Date.now();
-        
-        // Note: Don't add to scene here - MainScene.tsx will handle that
-        console.log(`Created ${this.name} planet at:`, this.position);
-    }
+  // Orbital parameters (Keplerian elements)
+  public distanceFromSun: number = 2870658186; // km (average)
+  public perihelion: number = 2743000000; // km (closest approach to Sun)
+  public aphelion: number = 2998400000; // km (furthest from Sun)
+  public semiMajorAxis: number = 2870658186; // km (a) - size of the orbit
+  public semiMinorAxis: number = 2869000000; // km (b) - width of the orbit
+  public eccentricity: number = 0.046381; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
+  public orbitalPeriod: number = 30688.5; // days (sidereal period)
+  public orbitalVelocity: number = 6.81; // km/s (average)
+  public orbitalInclination: number = 0.772; // degrees (i) - tilt of orbital plane
+  public orbitalEccentricity: number = 0.046381; // unitless - same as eccentricity
 
+  // Extended orbital elements (for 3D orbits and relativity)
+  public longitudeOfAscendingNode: number = 74.23; // degrees (Ω)
+  public argumentOfPerihelion: number = 96.7; // degrees (ω)
 
-    solveKepler(M: number, e: number): number {
-        let E = M;
-        let delta = 1;
-        while (delta > 1e-6) {
-            delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-            E -= delta;
-        }
-        return E;
-    }
+  // Environmental properties
+  public meanTemperature: number = 77; // K
+  public surfaceTemperature: number = 77; // K (no solid surface)
+  public surfacePressure: number = 0; // Pa (gas giant)
 
-    calculateOrbit() {
-        const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
-        this.lastUpdateTime = Date.now();
+  // System properties
+  public numberOfMoons: number = 27;
+  public hasRingSystem: boolean = true;
+  public hasGlobalMagneticField: boolean = true;
+  public centralBody: number = 1.989e30; // Sun's mass
 
-        const meanMotion = 2 * Math.PI / this.orbitalPeriod; // Mean motion (radians per day)
-        this.meanAnomaly += meanMotion * (elapsedTime / 86400); // Update mean anomaly
+  // Physical appearance
+  public texture: THREE.Texture;
 
-        const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
-        const x = this.semiMajorAxis * (Math.cos(E) - this.eccentricity);
-        const y = this.semiMajorAxis * Math.sqrt(1 - this.eccentricity ** 2) * Math.sin(E);
-        const z = 0; // Assuming orbit in the xy-plane
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) {
+    super(renderer, scene, camera);
 
-        this.mesh.position.set(x, y, z);
-        this.position = this.mesh.position.clone(); // Update position property
-        this.uranusParent.position.set(x, y, z);
-    }
+    // Load Uranus texture
+    this.texture = textureLoader.load("/assets/images/uranus.jpeg");
 
-    update(dt: number) {
-        this.calculateOrbit();
-        const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
-        this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed
-    }
+    // Initialize the planet
+    this.initialize();
+
+    console.log(
+      `Created ${this.name} planet with advanced physics at:`,
+      this.position
+    );
+  }
+
+  /**
+   * Override applyAxialTilt to implement Uranus's extreme axial tilt (97.77°)
+   * Uranus is unique in that it rotates almost on its side
+   */
+  public applyAxialTilt(): void {
+    // Let the OrbitalMechanics utility handle this special case
+    // The utility has a special condition for Uranus in applyAxialTilt method
+    super.applyAxialTilt();
+  }
+
+  /**
+   * Override updateRotation to handle Uranus's special rotation characteristics
+   */
+  protected updateRotation(dt: number): void {
+    // Uranus rotates "on its side" - this is handled by the axial tilt
+    // Here we just need to set the correct rotation speed
+    const rotationPeriodSeconds = this.rotationPeriod * 86400; // Convert days to seconds
+    const rotationSpeed = (2 * Math.PI) / rotationPeriodSeconds;
+
+    // Apply rotation around the already-tilted axis
+    this.mesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), rotationSpeed * dt);
+  }
 }
 
 export default Uranus;

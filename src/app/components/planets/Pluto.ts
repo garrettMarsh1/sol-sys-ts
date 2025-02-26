@@ -1,147 +1,100 @@
-import * as THREE from 'three';
-import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface'
+// src/app/components/planets/Pluto.ts
+import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
+import { BasePlanet } from "./BasePlanet";
 
-class Pluto implements Planet{
-    public name: string;
-    public position: THREE.Vector3;
-    public velocity: THREE.Vector3;
-    public radius: number;
-    public mass: number;
-    public density: number;
-    public gravity: number;
-    public escapeVelocity: number;
-    public rotationPeriod: number;
-    public lengthOfDay: number;
-    public distanceFromSun: number;
-    public perihelion: number;
-    public aphelion: number;
-    public orbitalPeriod: number;
-    public orbitalVelocity: number;
-    public orbitalInclination: number;
-    public orbitalEccentricity: number;
-    public obliquityToOrbit: number;
-    public meanTemperature: number;
-    public surfacePressure: number;
-    public numberOfMoons: number;
-    public moons: any[];
-    public hasRingSystem: boolean;
-    public hasGlobalMagneticField: boolean;
-    public texture: THREE.Texture;
-    public semiMajorAxis: number;
-    public semiMinorAxis: number;
-    public eccentricity: number;
-    public meanAnomaly: number;
-    public centralBody: number;
-    public composition: Record<string, number>;
-    public plutoParent: THREE.Object3D;
-    public mesh: THREE.Mesh;
-    public lastUpdateTime: number;
-    diameter!: number;
-    surfaceTemperature!: number;
-    magneticField?: { polar: number; equatorial: number; } | undefined;
-    atmosphere?: { layers: { name: string; temperature: number; pressure: number; }[]; } | undefined;
-    albedo?: number | undefined;
-    atmosphereScale?: number | undefined;
-    lightDirection?: THREE.Vector3 | undefined;
+class Pluto extends BasePlanet {
+  // Identification
+  public name: string = "Pluto";
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
-        this.name = 'Pluto';
-        this.position = new THREE.Vector3(5906380624, 0, 0);
-        this.velocity = new THREE.Vector3(0, 0, 0);
-        this.radius = 1188;
-        this.diameter = this.radius * 2;
-        this.mass = 1.303e22;
-        this.density = 2095;
-        this.gravity = 0.62;
-        this.escapeVelocity = 1.3;
-        this.rotationPeriod = 6.3872;
-        this.lengthOfDay = 153.3;
-        this.distanceFromSun = 5906380624;
-        this.perihelion = 4436000000;
-        this.aphelion = 7375000000;
-        this.orbitalPeriod = 248.54;
-        this.orbitalVelocity = 4.74;
-        this.orbitalInclination = 17.15;
-        this.orbitalEccentricity = 0.2488;
-        this.obliquityToOrbit = 122.53;
-        this.meanTemperature = -229;
-        this.surfacePressure = 0;
-        this.numberOfMoons = 5;
-        this.moons = [];
-        this.hasRingSystem = false;
-        this.hasGlobalMagneticField = false;
-        this.texture = textureLoader.load('/assets/images/pluto.jpeg');
-        this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
-        this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
-        this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
-        this.meanAnomaly = 0; // M = 0
-        this.centralBody = Sun.mass;
-        this.surfaceTemperature = -229;
-        this.composition = {
-            'Nitrogen': 2.7,
-            'Methane': 0.2,
-            'Carbon Monoxide': 0.2,
-            'Carbon Dioxide': 0.1,
-            'Water': 0.1,
-            'Ammonia': 0.1,
-            'Sodium': 0.1,
-            'Magnesium': 0.1,
-            'Silicon': 0.1,
-            'Iron': 0.1
-        };
-        this.plutoParent = new THREE.Object3D();
-        this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.radius, 96, 96),
-            new THREE.MeshPhongMaterial({
-                map: this.texture
-            })
-        );
-        this.mesh.name = this.name;
-        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-        this.plutoParent.add(this.mesh);
+  // Physical properties
+  public mass: number = 1.303e22; // kg
+  public radius: number = 1188; // km
+  public diameter: number = 2376; // km
+  public density: number = 2095; // kg/m³
+  public gravity: number = 0.62; // m/s²
+  public escapeVelocity: number = 1.3; // km/s
 
-        this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
-        this.lastUpdateTime = Date.now();
-        
-        // Note: Don't add to scene here - MainScene.tsx will handle that
-        console.log(`Created ${this.name} planet at:`, this.position);
-    }
+  // Rotation parameters
+  public rotationPeriod: number = 6.3872; // days (sidereal)
+  public lengthOfDay: number = 153.3; // hours
+  public obliquityToOrbit: number = 122.53; // degrees (axial tilt)
 
+  // Orbital parameters (Keplerian elements)
+  public distanceFromSun: number = 5906380624; // km (average)
+  public perihelion: number = 4436000000; // km (closest approach to Sun)
+  public aphelion: number = 7375000000; // km (furthest from Sun)
+  public semiMajorAxis: number = 5906380624; // km (a) - size of the orbit
+  public semiMinorAxis: number = 5720000000; // km (b) - width of the orbit
+  public eccentricity: number = 0.2488; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
+  public orbitalPeriod: number = 90560; // days (sidereal period)
+  public orbitalVelocity: number = 4.74; // km/s (average)
+  public orbitalInclination: number = 17.15; // degrees (i) - tilt of orbital plane
+  public orbitalEccentricity: number = 0.2488; // unitless - same as eccentricity
 
-    solveKepler(M: number, e: number): number {
-        let E = M;
-        let delta = 1;
-        while (delta > 1e-6) {
-            delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-            E -= delta;
-        }
-        return E;
-    }
+  // Extended orbital elements (for 3D orbits and relativity)
+  public longitudeOfAscendingNode: number = 110.3; // degrees (Ω)
+  public argumentOfPerihelion: number = 113.83; // degrees (ω)
 
-    calculateOrbit() {
-        const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
-        this.lastUpdateTime = Date.now();
+  // Environmental properties
+  public meanTemperature: number = 44; // K
+  public surfaceTemperature: number = 44; // K
+  public surfacePressure: number = 0.00001; // Pa (extremely thin atmosphere)
 
-        const meanMotion = 2 * Math.PI / this.orbitalPeriod; // Mean motion (radians per day)
-        this.meanAnomaly += meanMotion * (elapsedTime / 86400); // Update mean anomaly
+  // System properties
+  public numberOfMoons: number = 5;
+  public hasRingSystem: boolean = false;
+  public hasGlobalMagneticField: boolean = false;
+  public centralBody: number = 1.989e30; // Sun's mass
 
-        const E = this.solveKepler(this.meanAnomaly, this.eccentricity);
-        const x = this.semiMajorAxis * (Math.cos(E) - this.eccentricity);
-        const y = this.semiMajorAxis * Math.sqrt(1 - this.eccentricity ** 2) * Math.sin(E);
-        const z = 0; // Assuming orbit in the xy-plane
+  // Physical appearance
+  public texture: THREE.Texture;
 
-        this.mesh.position.set(x, y, z);
-        this.position = this.mesh.position.clone(); // Update position property
-        this.plutoParent.position.set(x, y, z);
-    }
+  // Composition information
+  public composition: Record<string, number> = {
+    "Nitrogen ice": 70,
+    "Methane ice": 20,
+    "Carbon monoxide ice": 10,
+  };
 
-    update(dt: number) {
-        this.calculateOrbit();
-        const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
-        this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed
-    }
+  constructor(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera
+  ) {
+    super(renderer, scene, camera);
+
+    // Load Pluto texture
+    this.texture = textureLoader.load("/assets/images/pluto.jpeg");
+
+    // Initialize the planet
+    this.initialize();
+
+    console.log(
+      `Created ${this.name} planet with advanced physics at:`,
+      this.position
+    );
+  }
+
+  /**
+   * Override applyAxialTilt to implement Pluto's extreme axial tilt (122.53°)
+   * Pluto, like Uranus, has a very unusual tilt
+   */
+  public applyAxialTilt(): void {
+    // Let the OrbitalMechanics utility handle the basic tilt
+    super.applyAxialTilt();
+
+    // Add any Pluto-specific adjustments here if needed
+  }
+
+  /**
+   * Calculate orbit with special handling for Pluto's highly eccentric and inclined orbit
+   * @param elapsedTimeSeconds Time elapsed in seconds
+   */
+  public calculateOrbit(elapsedTimeSeconds: number): void {
+    // Use the base implementation which includes relativistic effects if enabled
+    super.calculateOrbit(elapsedTimeSeconds);
+  }
 }
 
 export default Pluto;
