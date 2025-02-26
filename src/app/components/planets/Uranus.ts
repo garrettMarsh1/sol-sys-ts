@@ -45,11 +45,12 @@ class Uranus implements Planet{
     diameter!: number;
     magneticField: { polar: number; equatorial: number; };
 
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = 'Uranus';
         this.position = new THREE.Vector3(2870658186, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.radius = 25559;
+        this.diameter = this.radius * 2;
         this.mass = 8.681e25;
         this.density = 1271;
         this.gravity = 8.87;
@@ -113,6 +114,9 @@ class Uranus implements Planet{
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
         this.lastUpdateTime = Date.now();
+        
+        // Note: Don't add to scene here - MainScene.tsx will handle that
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
 
 
@@ -139,10 +143,11 @@ class Uranus implements Planet{
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Update position property
         this.uranusParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
         this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed

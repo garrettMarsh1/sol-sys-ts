@@ -47,12 +47,13 @@ class Neptune implements Planet{
     atmosphere?: { layers: { name: string; temperature: number; pressure: number; }[]; } | undefined;
 
 
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = 'Neptune';
         this.position = new THREE.Vector3(4498396441, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.mass = 1.024e26;
         this.radius = 24764;
+        this.diameter = this.radius * 2;
         this.density = 1638;
         this.gravity = 11.15;
         this.escapeVelocity = 23.5;
@@ -91,7 +92,7 @@ class Neptune implements Planet{
         this.neptuneParent = new THREE.Object3D();
         this.mesh = new THREE.Mesh(
             new THREE.SphereGeometry(this.radius, 64, 64),
-            new THREE.MeshBasicMaterial({
+            new THREE.MeshPhongMaterial({
                 map: this.texture
             })
         );
@@ -101,6 +102,9 @@ class Neptune implements Planet{
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
         this.lastUpdateTime = Date.now();
+        
+        // Note: Don't add to scene here - MainScene.tsx will handle that
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
 
     solveKepler(M: number, e: number): number {
@@ -126,10 +130,11 @@ class Neptune implements Planet{
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Update position property
         this.neptuneParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriodDays * 86400); // Convert days to seconds
         this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed

@@ -45,12 +45,13 @@ class Mercury implements Planet {
     atmosphereScale?: number | undefined;
     lightDirection?: THREE.Vector3 | undefined;
     
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = "Mercury";
         this.position = new THREE.Vector3(57909050, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.mass = 3.285 * Math.pow(10, 23);
         this.diameter = 4879;
+        this.radius = this.diameter / 2;
         this.density = 5427;
         this.gravity = 3.7;
         this.escapeVelocity = 4.3;
@@ -74,9 +75,8 @@ class Mercury implements Planet {
         this.eccentricity = (this.aphelion - this.perihelion) / (this.aphelion + this.perihelion); // e = (r_max - r_min) / (r_max + r_min)
         this.meanAnomaly = 0; // M = 0 at t = 0
         this.centralBody = Sun.position;
+        this.surfaceTemperature = 167; // K
         this.lastUpdateTime = Date.now();
-
-        
 
         this.mercuryParent = new THREE.Object3D();
         this.mesh = new THREE.Mesh(
@@ -90,6 +90,9 @@ class Mercury implements Planet {
         this.mercuryParent.add(this.mesh);
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
+        
+        // Note: Don't add to scene here - MainScene.tsx will handle that
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
 
 
@@ -116,10 +119,11 @@ class Mercury implements Planet {
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Update position property
         this.mercuryParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
         this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed

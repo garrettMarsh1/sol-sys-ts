@@ -46,9 +46,7 @@ class Jupiter implements Planet{
     atmosphereScale?: number | undefined;
     lightDirection?: THREE.Vector3 | undefined;
 
-
-
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = 'Jupiter';
         this.position = new THREE.Vector3(778547200, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
@@ -129,7 +127,11 @@ class Jupiter implements Planet{
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
 
         this.lastUpdateTime = Date.now();
+        
+        // Note: Don't add to scene here - MainScene.tsx will handle that
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
+    
     solveKepler(M: number, e: number): number {
         // Solve Kepler's equation for the eccentric anomaly (E) given the mean anomaly (M) and eccentricity (e)
         let E = M;
@@ -154,10 +156,11 @@ class Jupiter implements Planet{
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Update position property
         this.jupiterParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
         this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed

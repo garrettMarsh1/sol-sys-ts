@@ -46,11 +46,12 @@ class Pluto implements Planet{
     atmosphereScale?: number | undefined;
     lightDirection?: THREE.Vector3 | undefined;
 
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = 'Pluto';
         this.position = new THREE.Vector3(5906380624, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.radius = 1188;
+        this.diameter = this.radius * 2;
         this.mass = 1.303e22;
         this.density = 2095;
         this.gravity = 0.62;
@@ -77,6 +78,7 @@ class Pluto implements Planet{
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
         this.meanAnomaly = 0; // M = 0
         this.centralBody = Sun.mass;
+        this.surfaceTemperature = -229;
         this.composition = {
             'Nitrogen': 2.7,
             'Methane': 0.2,
@@ -102,6 +104,9 @@ class Pluto implements Planet{
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
         this.lastUpdateTime = Date.now();
+        
+        // Note: Don't add to scene here - MainScene.tsx will handle that
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
 
 
@@ -128,10 +133,11 @@ class Pluto implements Planet{
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Update position property
         this.plutoParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
         this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed

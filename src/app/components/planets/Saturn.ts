@@ -47,12 +47,13 @@ class Saturn implements Planet {
     atmosphereScale?: number | undefined;
     lightDirection?: THREE.Vector3 | undefined;
 
-    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene) {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = 'Saturn';
         this.position = new THREE.Vector3(1433449370, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.mass = 5.683e26; // kg
         this.radius = 58232; // km
+        this.diameter = this.radius * 2;
         this.density = 0.687; // g/cm^3
         this.gravity = 10.44; // m/s^2
         this.escapeVelocity = 35.5; // km/s
@@ -81,6 +82,7 @@ class Saturn implements Planet {
         this.meanAnomaly = 0; // M = 0
         this.centralBody = Sun.mass;
         this.modelPath = '/assets/models/Saturn_1_120536.glb'; // Updated path to the GLB model
+        this.surfaceTemperature = 134; // K
 
         // Create a group to hold Saturn and its rings
         this.saturnGroup = new THREE.Group();
@@ -100,24 +102,30 @@ class Saturn implements Planet {
         this.saturnGroup.position.set(this.position.x, this.position.y, this.position.z);
         
         // Try to load the GLTF model
-        this.loadModel(scene);
+        this.loadModel();
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
         this.lastUpdateTime = Date.now();
         
-        // Add the group to the scene
-        scene.add(this.saturnGroup);
+        // Important: Make the mesh property point to the group
+        // This ensures MainScene can add the entire group to the scene
+        this.mesh = this.saturnGroup as any;
+        
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
 
-    private loadModel(scene: THREE.Scene) {
+    private loadModel() {
         const loader = new GLTFLoader();
         loader.load(
             this.modelPath, 
             (gltf) => {
                 console.log("Loaded Saturn GLTF model successfully");
                 
-                // Remove placeholder mesh
-                this.saturnGroup.remove(this.mesh);
+                // Remove placeholder mesh from the group
+                const placeholderMesh = this.saturnGroup.children.find(child => child.name === this.name);
+                if (placeholderMesh) {
+                    this.saturnGroup.remove(placeholderMesh);
+                }
                 
                 // Scale and position the model
                 gltf.scene.scale.set(1000, 1000, 1000); // Adjust scale as needed
@@ -125,13 +133,14 @@ class Saturn implements Planet {
                 // Add the loaded model to our Saturn group
                 this.saturnGroup.add(gltf.scene);
                 
-                // Update our reference to the primary mesh
+                // Traverse to find mesh objects and update materials if needed
                 gltf.scene.traverse((child) => {
                     if ((child as THREE.Mesh).isMesh) {
-                        // Update materials if needed
+                        // Update materials or properties if needed
                         const mesh = child as THREE.Mesh;
                         if (mesh.name.includes("Saturn")) {
-                            this.mesh = mesh;
+                            // Keep a reference to the main Saturn mesh for potential use
+                            // But don't change this.mesh as it needs to remain pointing to the group
                         }
                     }
                 });
@@ -157,7 +166,7 @@ class Saturn implements Planet {
         return E;
     }
 
-    update(dt: number) {
+    calculateOrbit() {
         const elapsedTime = (Date.now() - this.lastUpdateTime) / 1000; // Time in seconds
         this.lastUpdateTime = Date.now();
 
@@ -172,8 +181,12 @@ class Saturn implements Planet {
         // Update the whole group position
         this.saturnGroup.position.set(x, y, z);
         
-        // Update mesh reference position (for any calculations that need it)
-        this.mesh.position.set(0, 0, 0); // Centered in the group
+        // Update reference position for other calculations
+        this.position = this.saturnGroup.position.clone();
+    }
+
+    update(dt: number) {
+        this.calculateOrbit();
         
         // Apply rotation for Saturn's day
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds

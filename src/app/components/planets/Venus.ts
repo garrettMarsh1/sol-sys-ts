@@ -47,12 +47,13 @@ class Venus implements Planet{
     atmosphereScale?: number | undefined;
     lightDirection?: THREE.Vector3 | undefined;
 
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = "Venus";
         this.position = new THREE.Vector3(108208930, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.mass = 4.867e24; // kg
         this.diameter = 12104; // km
+        this.radius = this.diameter / 2;
         this.density = 5243; // kg/m^3
         this.gravity = 8.87; // m/s^2
         this.escapeVelocity = 10.36; // km/s
@@ -96,6 +97,9 @@ class Venus implements Planet{
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
         this.lastUpdateTime = Date.now();
+        
+        // Note: Don't add to scene here - MainScene.tsx will handle that
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
 
 
@@ -122,10 +126,11 @@ class Venus implements Planet{
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Update position property
         this.venusParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
         const rotationSpeed = (2 * Math.PI) / (this.rotationPeriod * 86400); // Convert days to seconds
         this.mesh.rotation.y += rotationSpeed; // Accurate rotation speed
