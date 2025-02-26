@@ -151,69 +151,86 @@ const GameHUD: React.FC<GameHUDProps> = ({
         </div>
       </div>
 
-      {/* Autopilot and warp controls */}
-      {currentPlanet && (
-        <div className="space-y-2 mb-3">
-          <div className="hologram-buttons-container">
-            <button
-              onClick={
-                autopilotProgress > 0
-                  ? onCancelAutopilot
-                  : onStartAutopilot
+      {(currentPlanet || mapSelectedPlanet) && (
+  <div className="space-y-2 mb-3">
+    <div className="hologram-buttons-container">
+      <button
+        onClick={
+          autopilotProgress > 0
+            ? onCancelAutopilot
+            : () => {
+                // Use either currentPlanet or mapSelectedPlanet
+                const targetPlanet = currentPlanet || mapSelectedPlanet;
+                if (targetPlanet) {
+                  // First set the planet as target if it's not the current target
+                  if (!currentPlanet || currentPlanet.name !== targetPlanet.name) {
+                    onFollowPlanet(targetPlanet.name);
+                  }
+                  // Then start autopilot
+                  onStartAutopilot();
+                }
               }
-              className={`hologram-button ${
-                autopilotProgress > 0
-                  ? "hologram-button-danger"
-                  : "hologram-button-success"
-              }`}
-              disabled={warpProgress > 0}
-            >
-              <span className="hologram-button-text">
-                {autopilotProgress > 0
-                  ? "Cancel Autopilot"
-                  : "Start Autopilot"}
-              </span>
-            </button>
-            <button
-              onClick={() => onWarpToPlanet(currentPlanet.name)}
-              className="hologram-button hologram-button-warning"
-              disabled={
-                warpProgress > 0 ||
-                autopilotProgress > 0
-              }
-            >
-              <span className="hologram-button-text">Warp</span>
-            </button>
-          </div>
-          
-          {autopilotProgress > 0 && (
-            <div>
-              <div className="text-xs mb-1 text-cyan-400">Autopilot Progress</div>
-              <div className="progress-bar">
-                <div
-                  className="progress-bar-fill"
-                  style={{ width: `${autopilotProgress * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
-          
-          {warpProgress > 0 && (
-            <div>
-              <div className="text-xs mb-1 text-yellow-300">Warp Progress</div>
-              <div className="progress-bar">
-                <div
-                  className="progress-bar-fill"
-                  style={{
-                    width: `${warpProgress * 100}%`,
-                    backgroundColor: "#f59e0b",
-                  }}
-                ></div>
-              </div>
-            </div>
-          )}
+        }
+        className={`hologram-button ${
+          autopilotProgress > 0
+            ? "hologram-button-danger"
+            : "hologram-button-success"
+        }`}
+        disabled={warpProgress > 0}
+      >
+        <span className="hologram-button-text">
+          {autopilotProgress > 0
+            ? "Cancel Autopilot"
+            : "Start Autopilot"}
+        </span>
+      </button>
+      <button
+        onClick={() => {
+          // Use either currentPlanet or mapSelectedPlanet
+          const targetPlanet = currentPlanet || mapSelectedPlanet;
+          if (targetPlanet) {
+            onWarpToPlanet(targetPlanet.name);
+          }
+        }}
+        className="hologram-button hologram-button-warning"
+        disabled={
+          warpProgress > 0 ||
+          autopilotProgress > 0
+        }
+      >
+        <span className="hologram-button-text">Warp</span>
+      </button>
+    </div>
+    
+    {autopilotProgress > 0 && (
+      <div>
+        <div className="text-xs mb-1 text-cyan-400">Autopilot Progress</div>
+        <div className="progress-bar">
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${autopilotProgress * 100}%` }}
+          ></div>
         </div>
-      )}
+      </div>
+    )}
+    
+    {warpProgress > 0 && (
+      <div>
+        <div className="text-xs mb-1 text-yellow-300">Warp Progress</div>
+        <div className="progress-bar">
+          <div
+            className="progress-bar-fill"
+            style={{
+              width: `${warpProgress * 100}%`,
+              backgroundColor: "#f59e0b",
+            }}
+          ></div>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
 
       <div>
         <div className="data-label mb-1">Control Reference</div>

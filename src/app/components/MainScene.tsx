@@ -495,10 +495,10 @@ private setupPostProcessing() {
       if (this.debug) console.log("Animation loop aborted: not initialized");
       return;
     }
-
+  
     // Request the next frame
     this.animationFrameId = requestAnimationFrame(this.animate);
-
+  
     try {
       // Calculate delta time
       const currentTime = performance.now();
@@ -507,44 +507,50 @@ private setupPostProcessing() {
         0.1
       ); // Cap to 100ms
       this.lastFrameTime = currentTime;
-
+  
       // Skip updates if paused
       if (this.timeScale !== 0) {
         // Calculate scaled delta for planet movements
         const scaledDelta = deltaTime * this.timeScale;
-
+  
         // Update planets
         this.planets.forEach((planet) => planet.update(scaledDelta));
       }
-
+  
       // Update advanced camera (always uses real delta time, not scaled)
       if (this.advancedCamera) {
         this.advancedCamera.update(deltaTime);
       }
-
+  
       // Update autopilot and warp progress for UI
       if (this.advancedCamera && this.advancedCamera.isAutopilotActive()) {
         this.callbacks.onAutopilotProgressUpdate(
           this.advancedCamera.getAutopilotProgress()
         );
-
+  
         // Update trajectory visualization if available
         if (this.trajectoryVisualization) {
           this.trajectoryVisualization.updateProgress(
             this.advancedCamera.getAutopilotProgress()
           );
         }
+      } else {
+        // Reset autopilot progress to 0 when not active
+        this.callbacks.onAutopilotProgressUpdate(0);
       }
-
+  
       if (this.advancedCamera && this.advancedCamera.isWarpActive()) {
         this.callbacks.onWarpProgressUpdate(
           this.advancedCamera.getWarpProgress()
         );
+      } else {
+        // Reset warp progress to 0 when not active
+        this.callbacks.onWarpProgressUpdate(0);
       }
-
+  
       // Update TWEEN animations
       TWEEN.update();
-
+  
       // Render the scene
       this.render();
     } catch (error) {
@@ -620,88 +626,85 @@ private setupPostProcessing() {
     }
   }
 
-  /**
-   * Warp to a planet by name
-   */
-// Fixed warpToPlanet method for MainSceneWithAdvancedCamera
-public warpToPlanet(planetName: string) {
-  if (!this.advancedCamera) {
-    console.warn("Cannot warp: Advanced camera not initialized");
-    return;
-  }
-  
-  try {
-    console.log(`Attempting to warp to planet: ${planetName}`);
-    
-    // Find the planet
-    const planet = this.planets.find(
-      (p) => p.object.name.toLowerCase() === planetName.toLowerCase()
-    );
-    
-    if (!planet) {
-      console.warn(`Planet "${planetName}" not found`);
+
+  public warpToPlanet(planetName: string) {
+    if (!this.advancedCamera) {
+      console.warn("Cannot warp: Advanced camera not initialized");
       return;
     }
     
-    // Deep clone and validate the planet position before setting as target
-    const planetPosition = planet.object.position;
-    
-    // Make sure the planet has valid coordinates
-    if (isNaN(planetPosition.x) || 
-        isNaN(planetPosition.y) || 
-        isNaN(planetPosition.z)) {
-      console.error(`Planet "${planetName}" has invalid coordinates. Attempting to fix...`);
+    try {
+      console.log(`Attempting to warp to planet: ${planetName}`);
       
-      // Try to reset to default coordinates if needed
-      switch(planetName.toLowerCase()) {
-        case "sun":
-          planet.object.position.set(0, 0, 0);
-          break;
-        case "mercury":
-          planet.object.position.set(57909050, 0, 0);
-          break;
-        case "venus":
-          planet.object.position.set(108208930, 0, 0);
-          break;
-        case "earth":
-          planet.object.position.set(149597890, 0, 0);
-          break;
-        case "mars":
-          planet.object.position.set(227936640, 0, 0);
-          break;
-        case "jupiter":
-          planet.object.position.set(778547200, 0, 0);
-          break;
-        case "saturn":
-          planet.object.position.set(1433449370, 0, 0);
-          break;
-        case "uranus":
-          planet.object.position.set(2870658186, 0, 0);
-          break;
-        case "neptune":
-          planet.object.position.set(4498396441, 0, 0);
-          break;
-        case "pluto":
-          planet.object.position.set(5906380624, 0, 0);
-          break;
-        default:
-          console.error(`Cannot fix position for unknown planet: ${planetName}`);
-          return;
+      // Find the planet
+      const planet = this.planets.find(
+        (p) => p.object.name.toLowerCase() === planetName.toLowerCase()
+      );
+      
+      if (!planet) {
+        console.warn(`Planet "${planetName}" not found`);
+        return;
       }
       
-      console.log(`Restored default position for ${planetName}:`, planet.object.position);
+      // Deep clone and validate the planet position before setting as target
+      const planetPosition = planet.object.position;
+      
+      // Make sure the planet has valid coordinates
+      if (isNaN(planetPosition.x) || 
+          isNaN(planetPosition.y) || 
+          isNaN(planetPosition.z)) {
+        console.error(`Planet "${planetName}" has invalid coordinates. Attempting to fix...`);
+        
+        // Try to reset to default coordinates if needed
+        switch(planetName.toLowerCase()) {
+          case "sun":
+            planet.object.position.set(0, 0, 0);
+            break;
+          case "mercury":
+            planet.object.position.set(57909050, 0, 0);
+            break;
+          case "venus":
+            planet.object.position.set(108208930, 0, 0);
+            break;
+          case "earth":
+            planet.object.position.set(149597890, 0, 0);
+            break;
+          case "mars":
+            planet.object.position.set(227936640, 0, 0);
+            break;
+          case "jupiter":
+            planet.object.position.set(778547200, 0, 0);
+            break;
+          case "saturn":
+            planet.object.position.set(1433449370, 0, 0);
+            break;
+          case "uranus":
+            planet.object.position.set(2870658186, 0, 0);
+            break;
+          case "neptune":
+            planet.object.position.set(4498396441, 0, 0);
+            break;
+          case "pluto":
+            planet.object.position.set(5906380624, 0, 0);
+            break;
+          default:
+            console.error(`Cannot fix position for unknown planet: ${planetName}`);
+            return;
+        }
+        
+        console.log(`Restored default position for ${planetName}:`, planet.object.position);
+      }
+      
+      // First set the target with the valid position
+      this.advancedCamera.setTarget(planet.object);
+      
+      // Then initiate warp - FAST TRAVEL
+      this.advancedCamera.startWarp();
+      
+    } catch (error) {
+      console.error(`Error warping to planet ${planetName}:`, error);
     }
-    
-    // First set the target with the valid position
-    this.advancedCamera.setTarget(planet.object);
-    
-    // Then initiate warp
-    this.advancedCamera.startWarp();
-    
-  } catch (error) {
-    console.error(`Error warping to planet ${planetName}:`, error);
   }
-}
 
   /**
    * Follow a planet by name
@@ -718,83 +721,81 @@ public warpToPlanet(planetName: string) {
     }
   }
 
-/**
- * Start autopilot to current target with improved validation
- */
-public startAutopilot() {
-  if (!this.advancedCamera) {
-    console.warn("Cannot start autopilot: Advanced camera not initialized");
-    return;
-  }
-  
-  const targetPlanet = this.advancedCamera.getTarget();
-  if (!targetPlanet) {
-    console.warn("Cannot start autopilot: No target planet selected");
-    return;
-  }
-  
-  try {
-    // Log the start of autopilot for debugging
-    console.log(`Starting autopilot to ${targetPlanet.name} at position:`, 
-      targetPlanet.position.x,
-      targetPlanet.position.y,
-      targetPlanet.position.z
-    );
-    
-    // Calculate and show trajectory before starting autopilot
-    if (this.trajectoryVisualization) {
-      const startPosition = this.advancedCamera.position.clone();
-      const startVelocity = this.advancedCamera.getVelocity();
-      
-      console.log("Calculating trajectory path from", 
-        startPosition.x, startPosition.y, startPosition.z, 
-        "to", 
-        targetPlanet.position.x, targetPlanet.position.y, targetPlanet.position.z
-      );
-
-      // Validate positions don't contain NaN
-      if (isNaN(startPosition.x) || isNaN(startPosition.y) || isNaN(startPosition.z) ||
-          isNaN(targetPlanet.position.x) || isNaN(targetPlanet.position.y) || isNaN(targetPlanet.position.z)) {
-        console.error("Invalid coordinates detected for trajectory calculation");
-        
-        // Try to fix the position if possible
-        if (isNaN(startPosition.x) || isNaN(startPosition.y) || isNaN(startPosition.z)) {
-          startPosition.set(0, 0, 1000000); // Default safe position
-        }
-      }
-
-      // Create the trajectory visualization
-      this.trajectoryVisualization.showTrajectory(
-        startPosition,
-        targetPlanet.position.clone(),
-        startVelocity,
-        1000, // Ship mass
-        this.planets.map((p) => p.object)
-      );
+  public startAutopilot() {
+    if (!this.advancedCamera) {
+      console.warn("Cannot start autopilot: Advanced camera not initialized");
+      return;
     }
-
-    // Start autopilot navigation
-    this.advancedCamera.startAutopilot();
-    console.log("Autopilot started successfully");
     
-  } catch (error) {
-    console.error("Error starting autopilot:", error);
+    const targetPlanet = this.advancedCamera.getTarget();
+    if (!targetPlanet) {
+      console.warn("Cannot start autopilot: No target planet selected");
+      return;
+    }
+    
+    try {
+      // Log the start of autopilot for debugging
+      console.log(`Starting autopilot to ${targetPlanet.name} at position:`, 
+        targetPlanet.position.x,
+        targetPlanet.position.y,
+        targetPlanet.position.z
+      );
+      
+      // Calculate and show trajectory before starting autopilot
+      if (this.trajectoryVisualization) {
+        const startPosition = this.advancedCamera.position.clone();
+        const startVelocity = this.advancedCamera.getVelocity();
+        
+        console.log("Calculating trajectory path from", 
+          startPosition.x, startPosition.y, startPosition.z, 
+          "to", 
+          targetPlanet.position.x, targetPlanet.position.y, targetPlanet.position.z
+        );
+  
+        // Validate positions don't contain NaN
+        if (isNaN(startPosition.x) || isNaN(startPosition.y) || isNaN(startPosition.z) ||
+            isNaN(targetPlanet.position.x) || isNaN(targetPlanet.position.y) || isNaN(targetPlanet.position.z)) {
+          console.error("Invalid coordinates detected for trajectory calculation");
+          
+          // Try to fix the position if possible
+          if (isNaN(startPosition.x) || isNaN(startPosition.y) || isNaN(startPosition.z)) {
+            startPosition.set(0, 0, 1000000); // Default safe position
+          }
+        }
+  
+        // Create the trajectory visualization
+        this.trajectoryVisualization.showTrajectory(
+          startPosition,
+          targetPlanet.position.clone(),
+          startVelocity,
+          1000, // Ship mass
+          this.planets.map((p) => p.object)
+        );
+      }
+  
+      // Start autopilot navigation - REALISTIC TRAVEL
+      this.advancedCamera.startAutopilot();
+      console.log("Autopilot started successfully");
+      
+    } catch (error) {
+      console.error("Error starting autopilot:", error);
+    }
+  }
+
+// Update cancelAutopilot method to explicitly reset progress
+public cancelAutopilot() {
+  if (!this.advancedCamera) return;
+  
+  this.advancedCamera.cancelAutopilot();
+  
+  // Explicitly reset autopilot progress
+  this.callbacks.onAutopilotProgressUpdate(0);
+
+  // Clear trajectory visualization
+  if (this.trajectoryVisualization) {
+    this.trajectoryVisualization.clearTrajectory();
   }
 }
-
-  /**
-   * Cancel autopilot
-   */
-  public cancelAutopilot() {
-    if (!this.advancedCamera) return;
-    
-    this.advancedCamera.cancelAutopilot();
-
-    // Clear trajectory visualization
-    if (this.trajectoryVisualization) {
-      this.trajectoryVisualization.clearTrajectory();
-    }
-  }
 
   /**
    * Update the planets array in the advanced camera

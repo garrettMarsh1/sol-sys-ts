@@ -443,42 +443,55 @@ export default class AdvancedSpaceCamera {
   /**
    * Start autopilot navigation to the current target
    */
-  public startAutopilot(): void {
+  public startAutopilot() {
     if (!this.currentTarget) {
       console.warn("Cannot start autopilot: No target selected");
       return;
     }
-
+  
+    // Validate target position
+    if (!this.currentTarget.position || 
+        isNaN(this.currentTarget.position.x) || 
+        isNaN(this.currentTarget.position.y) || 
+        isNaN(this.currentTarget.position.z)) {
+      console.error("Cannot start autopilot: Target has invalid position");
+      return;
+    }
+  
+    // Cancel any existing automated movement
+    this.cancelAllAutomatedMovement();
+    
     // Store previous mode to return to after autopilot completes
     this.previousMode = this.mode;
     this.setMode(CameraMode.AUTOPILOT);
-
-    const targetPosition = this.currentTarget.position.clone();
-    const currentPosition = this.position.clone();
-    const distance = currentPosition.distanceTo(targetPosition);
-
-    // Initialize autopilot data
+  
+    // Store initial values
     this.autopilot = {
       target: this.currentTarget,
       active: true,
       arrivalDistance: this.currentTarget.radius * 5, // Stop at 5x the planet's radius
-      initialDistance: distance,
+      initialDistance: this.position.distanceTo(this.currentTarget.position),
       startTime: Date.now(),
-      flightPath: this.calculateFlightPath(currentPosition, targetPosition),
+      flightPath: this.calculateFlightPath(
+        this.position.clone(), 
+        this.currentTarget.position.clone()
+      ),
       currentPathIndex: 0,
       targetVelocity: new THREE.Vector3(),
       completed: false,
     };
-
+  
     console.log(`Autopilot engaged: Navigating to ${this.currentTarget.name}`);
   }
-
   /**
    * Cancel autopilot and return to previous mode
    */
-  public cancelAutopilot(): void {
+  public cancelAutopilot() {
     if (this.autopilot.active) {
       this.autopilot.active = false;
+      this.autopilot.completed = false;
+      
+      // Switch back to previous mode
       this.setMode(this.previousMode || CameraMode.FREE_FLIGHT);
       console.log("Autopilot disengaged");
     }
@@ -584,6 +597,7 @@ public startWarp(): void {
     .onComplete(() => {
       // End warp
       this.warpActive = false;
+      this.warpProgress = 0;
       this.warpTween = null;
 
       // Go into orbit mode after warp
@@ -595,7 +609,6 @@ public startWarp(): void {
 
   console.log(`Warp drive engaged: Warping to ${this.currentTarget.name}`);
 }
-
   /**
    * Cancel warp and return to previous mode
    */
@@ -603,11 +616,13 @@ public startWarp(): void {
     if (this.warpActive && this.warpTween) {
       this.warpTween.stop();
       this.warpActive = false;
+      this.warpProgress = 0;
       this.warpTween = null;
       this.setMode(this.previousMode || CameraMode.FREE_FLIGHT);
       console.log("Warp drive disengaged");
     }
   }
+  
 
   /**
    * Set the camera to orbit around the current target
@@ -810,27 +825,30 @@ public startWarp(): void {
     if (!this.autopilot.active || !this.autopilot.target) {
       return;
     }
-
+  
     // Get current and target positions
     const targetPosition = this.autopilot.target.position.clone();
     const currentPosition = this.position.clone();
     const distance = currentPosition.distanceTo(targetPosition);
-
+  
     // Check if we've arrived
     if (distance <= this.autopilot.arrivalDistance) {
-      console.log(
-        `Autopilot complete: Arrived at ${this.autopilot.target.name}`
-      );
+      console.log(`Autopilot complete: Arrived at ${this.autopilot.target.name}`);
+      
+      // Mark as completed but not active
       this.autopilot.completed = true;
-
+      this.autopilot.active = false;
+  
       // Switch to orbit mode
       this.startOrbit();
       return;
     }
-
+  
     // Calculate progress and adjust speed
-    const progress = 1 - distance / this.autopilot.initialDistance;
-
+    const progress = Math.max(0, Math.min(1, 
+      1 - (distance / this.autopilot.initialDistance)
+    ));
+  
     // Start slow, middle fast, end slow (acceleration curve)
     let speedFactor: number;
     if (progress < 0.3) {
@@ -843,34 +861,35 @@ public startWarp(): void {
       // Cruising phase
       speedFactor = 0.6;
     }
-
+  
     // Calculate direction and apply velocity
     const direction = new THREE.Vector3()
       .subVectors(targetPosition, currentPosition)
       .normalize();
-
+  
     // Calculate speed based on distance (faster for longer distances)
     const baseSpeed = Math.min(
       this.settings.maxSpeed,
       Math.max(this.settings.movementSpeed, distance / 10)
     );
-
+  
     const speed = baseSpeed * speedFactor;
     this.velocity = direction.multiplyScalar(speed * deltaTime);
-
+  
     // Update position
     this.position.add(this.velocity);
-
+  
     // Look at where we're going
     this.lookAt(targetPosition);
-
+  
     // Update the camera position
     this.camera.position.copy(this.position);
-
+  
     // Broadcast updates
     this.onPositionChange(this.position);
     this.onSpeedChange(speed);
   }
+  
 
   /**
    * Update orbit mode around the current target
@@ -1147,13 +1166,18 @@ public startWarp(): void {
     if (!this.autopilot.active || !this.autopilot.target) {
       return 0;
     }
-
+  
     const initialDistance = this.autopilot.initialDistance;
+    if (initialDistance <= 0) {
+      return 0;
+    }
+    
     const currentDistance = this.position.distanceTo(
       this.autopilot.target.position
     );
-
-    return 1 - currentDistance / initialDistance;
+  
+    // Calculate progress and clamp between 0-1
+    return Math.max(0, Math.min(1, 1 - currentDistance / initialDistance));
   }
 
   /**
