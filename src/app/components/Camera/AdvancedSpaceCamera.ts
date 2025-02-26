@@ -402,12 +402,36 @@ export default class AdvancedSpaceCamera {
    * Set a planet as the current target
    */
   public setTarget(planet: Planet): void {
-    this.currentTarget = planet;
-    this.onTargetChange(planet);
-
-    console.log(`Target set to ${planet.name}`);
+    // First validate the planet position
+    if (!planet.position || 
+        isNaN(planet.position.x) || 
+        isNaN(planet.position.y) || 
+        isNaN(planet.position.z)) {
+      console.error(`Cannot set target: Planet ${planet.name} has invalid position:`, planet.position);
+      return;
+    }
+    
+    // Create a clean copy to avoid reference issues
+    const validatedPlanet = {
+      ...planet,
+      position: new THREE.Vector3(
+        planet.position.x,
+        planet.position.y,
+        planet.position.z
+      ),
+      // Copy other essential properties
+      name: planet.name,
+      radius: planet.radius || planet.diameter / 2 || 10000,
+      mass: planet.mass || 1.0e24,
+      mesh: planet.mesh
+    };
+    
+    // Set the validated target
+    this.currentTarget = validatedPlanet;
+    this.onTargetChange(validatedPlanet);
+  
+    console.log(`Target set to ${validatedPlanet.name} at position:`, validatedPlanet.position);
   }
-
   /**
    * Clear the current target
    */
@@ -460,90 +484,117 @@ export default class AdvancedSpaceCamera {
     }
   }
 
-  public startWarp(): void {
-    if (!this.currentTarget) {
-      console.warn("Cannot initiate warp: No target selected");
-      return;
-    }
-  
-    // Store previous mode to return to after warp completes
-    this.previousMode = this.mode;
-    this.setMode(CameraMode.WARPING);
-  
-    const targetPosition = this.currentTarget.position.clone();
-    const currentPosition = this.position.clone();
-    
-    // Validate positions
-    if (isNaN(targetPosition.x) || isNaN(targetPosition.y) || isNaN(targetPosition.z)) {
-      console.error("Target has invalid position:", targetPosition);
-      this.cancelWarp();
-      return;
-    }
-    
-    if (isNaN(currentPosition.x) || isNaN(currentPosition.y) || isNaN(currentPosition.z)) {
-      console.error("Current position is invalid:", currentPosition);
-      this.cancelWarp();
-      return;
-    }
-  
-    const distance = currentPosition.distanceTo(targetPosition);
-  
-    // Set warp parameters
-    this.warpActive = true;
-    this.warpProgress = 0;
-  
-    // Calculate suitable arrival position (offset from planet surface)
-    const arrivalDistance = Math.max(10000, this.currentTarget.radius * 5); // Minimum 10,000km
-    
-    // Create direction vector from target to our position (reversed from usual)
-    const arrivalDirection = new THREE.Vector3()
-      .subVectors(currentPosition, targetPosition)
-      .normalize();
-      
-    // Add this vector to the target position with proper scale
-    const arrivalPosition = targetPosition.clone()
-      .add(arrivalDirection.multiplyScalar(arrivalDistance));
-  
-    console.log("Warp parameters:", {
-      from: currentPosition,
-      to: arrivalPosition,
-      arrivalDistance
-    });
-  
-    // Create warp animation using TWEEN
-    this.warpTween = new TWEEN.Tween({ progress: 0 })
-      .to({ progress: 1 }, 3000) // 3 second warp
-      .easing(TWEEN.Easing.Quintic.InOut)
-      .onUpdate((obj) => {
-        this.warpProgress = obj.progress;
-  
-        // Calculate intermediate position
-        const newPosition = new THREE.Vector3().lerpVectors(
-          currentPosition,
-          arrivalPosition,
-          this.warpProgress
-        );
-  
-        // Update position
-        this.position.copy(newPosition);
-  
-        // Look at target during warp
-        this.lookAt(this.currentTarget!.position);
-      })
-      .onComplete(() => {
-        // End warp
-        this.warpActive = false;
-        this.warpTween = null;
-  
-        // Go into orbit mode after warp
-        this.setMode(CameraMode.ORBIT);
-  
-        console.log(`Warp complete: Arrived at ${this.currentTarget!.name}`);
-      })
-      .start();
-  
-    console.log(`Warp drive engaged: Warping to ${this.currentTarget.name}`);
+// Improved startWarp method for AdvancedSpaceCamera.ts
+public startWarp(): void {
+  if (!this.currentTarget) {
+    console.warn("Cannot initiate warp: No target selected");
+    return;
   }
+
+  // Store previous mode to return to after warp completes
+  this.previousMode = this.mode;
+  this.setMode(CameraMode.WARPING);
+
+  // Deep clone the positions to prevent reference issues
+  const targetPosition = new THREE.Vector3(
+    this.currentTarget.position.x,
+    this.currentTarget.position.y,
+    this.currentTarget.position.z
+  );
+  
+  const currentPosition = new THREE.Vector3(
+    this.position.x,
+    this.position.y,
+    this.position.z
+  );
+  
+  // Validate positions
+  if (isNaN(targetPosition.x) || isNaN(targetPosition.y) || isNaN(targetPosition.z)) {
+    console.error("Target has invalid position:", targetPosition);
+    this.cancelWarp();
+    return;
+  }
+  
+  if (isNaN(currentPosition.x) || isNaN(currentPosition.y) || isNaN(currentPosition.z)) {
+    console.error("Current position is invalid:", currentPosition);
+    this.cancelWarp();
+    return;
+  }
+
+  const distance = currentPosition.distanceTo(targetPosition);
+
+  // Set warp parameters
+  this.warpActive = true;
+  this.warpProgress = 0;
+
+  // Calculate suitable arrival position (offset from planet surface)
+  const arrivalDistance = Math.max(10000, this.currentTarget.radius * 5); // Minimum 10,000km
+  
+  // Create direction vector from target to our position (reversed from usual)
+  let arrivalDirection = new THREE.Vector3()
+    .subVectors(currentPosition, targetPosition);
+    
+  // Fix for when positions are too close (prevents NaN from normalization of zero vector)
+  if (arrivalDirection.length() < 0.001) {
+    console.log("Positions too close, using default direction vector");
+    // Use a default direction if positions are too close
+    arrivalDirection = new THREE.Vector3(1, 0, 0);
+  }
+  
+  // Now normalize safely
+  arrivalDirection.normalize();
+      
+  // Add this vector to the target position with proper scale
+  const arrivalPosition = targetPosition.clone()
+    .add(arrivalDirection.multiplyScalar(arrivalDistance));
+
+  console.log("Warp parameters:", {
+    from: currentPosition,
+    to: arrivalPosition,
+    arrivalDistance
+  });
+
+  // Final validation of arrival position
+  if (isNaN(arrivalPosition.x) || isNaN(arrivalPosition.y) || isNaN(arrivalPosition.z)) {
+    console.error("Calculated arrival position is invalid:", arrivalPosition);
+    this.cancelWarp();
+    return;
+  }
+
+  // Create warp animation using TWEEN
+  this.warpTween = new TWEEN.Tween({ progress: 0 })
+    .to({ progress: 1 }, 3000) // 3 second warp
+    .easing(TWEEN.Easing.Quintic.InOut)
+    .onUpdate((obj) => {
+      this.warpProgress = obj.progress;
+
+      // Calculate intermediate position
+      const newPosition = new THREE.Vector3().lerpVectors(
+        currentPosition,
+        arrivalPosition,
+        this.warpProgress
+      );
+
+      // Update position
+      this.position.copy(newPosition);
+
+      // Look at target during warp
+      this.lookAt(this.currentTarget!.position);
+    })
+    .onComplete(() => {
+      // End warp
+      this.warpActive = false;
+      this.warpTween = null;
+
+      // Go into orbit mode after warp
+      this.setMode(CameraMode.ORBIT);
+
+      console.log(`Warp complete: Arrived at ${this.currentTarget!.name}`);
+    })
+    .start();
+
+  console.log(`Warp drive engaged: Warping to ${this.currentTarget.name}`);
+}
 
   /**
    * Cancel warp and return to previous mode

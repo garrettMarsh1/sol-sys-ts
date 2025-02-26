@@ -653,50 +653,85 @@ private setupPostProcessing() {
   /**
    * Warp to a planet by name
    */
-  public warpToPlanet(planetName: string) {
-    if (!this.advancedCamera) {
-      console.warn("Cannot warp: Advanced camera not initialized");
+// Fixed warpToPlanet method for MainSceneWithAdvancedCamera
+public warpToPlanet(planetName: string) {
+  if (!this.advancedCamera) {
+    console.warn("Cannot warp: Advanced camera not initialized");
+    return;
+  }
+  
+  try {
+    console.log(`Attempting to warp to planet: ${planetName}`);
+    
+    // Find the planet
+    const planet = this.planets.find(
+      (p) => p.object.name.toLowerCase() === planetName.toLowerCase()
+    );
+    
+    if (!planet) {
+      console.warn(`Planet "${planetName}" not found`);
       return;
     }
     
-    try {
-      console.log(`Attempting to warp to planet: ${planetName}`);
+    // Deep clone and validate the planet position before setting as target
+    const planetPosition = planet.object.position;
+    
+    // Make sure the planet has valid coordinates
+    if (isNaN(planetPosition.x) || 
+        isNaN(planetPosition.y) || 
+        isNaN(planetPosition.z)) {
+      console.error(`Planet "${planetName}" has invalid coordinates. Attempting to fix...`);
       
-      // Find the planet
-      const planet = this.planets.find(
-        (p) => p.object.name.toLowerCase() === planetName.toLowerCase()
-      );
-      
-      if (!planet) {
-        console.warn(`Planet "${planetName}" not found`);
-        return;
+      // Try to reset to default coordinates if needed
+      switch(planetName.toLowerCase()) {
+        case "sun":
+          planet.object.position.set(0, 0, 0);
+          break;
+        case "mercury":
+          planet.object.position.set(57909050, 0, 0);
+          break;
+        case "venus":
+          planet.object.position.set(108208930, 0, 0);
+          break;
+        case "earth":
+          planet.object.position.set(149597890, 0, 0);
+          break;
+        case "mars":
+          planet.object.position.set(227936640, 0, 0);
+          break;
+        case "jupiter":
+          planet.object.position.set(778547200, 0, 0);
+          break;
+        case "saturn":
+          planet.object.position.set(1433449370, 0, 0);
+          break;
+        case "uranus":
+          planet.object.position.set(2870658186, 0, 0);
+          break;
+        case "neptune":
+          planet.object.position.set(4498396441, 0, 0);
+          break;
+        case "pluto":
+          planet.object.position.set(5906380624, 0, 0);
+          break;
+        default:
+          console.error(`Cannot fix position for unknown planet: ${planetName}`);
+          return;
       }
       
-      // Make sure the planet has valid coordinates
-      if (isNaN(planet.object.position.x) || 
-          isNaN(planet.object.position.y) || 
-          isNaN(planet.object.position.z)) {
-        console.error(`Planet "${planetName}" has invalid coordinates`);
-        return;
-      }
-      
-      // Set the target and initiate warp
-      console.log(`Warping to ${planetName} at position:`, 
-        planet.object.position.x,
-        planet.object.position.y,
-        planet.object.position.z
-      );
-      
-      // First set the target
-      this.advancedCamera.setTarget(planet.object);
-      
-      // Then initiate warp
-      this.advancedCamera.startWarp();
-      
-    } catch (error) {
-      console.error(`Error warping to planet ${planetName}:`, error);
+      console.log(`Restored default position for ${planetName}:`, planet.object.position);
     }
+    
+    // First set the target with the valid position
+    this.advancedCamera.setTarget(planet.object);
+    
+    // Then initiate warp
+    this.advancedCamera.startWarp();
+    
+  } catch (error) {
+    console.error(`Error warping to planet ${planetName}:`, error);
   }
+}
 
   /**
    * Follow a planet by name
