@@ -107,7 +107,6 @@ export default class AdvancedSpaceCamera {
     this.planets = planets;
     console.log(`Updated camera with ${planets.length} planets`);
   }
-  
 
   /**
    * Initialize the advanced space camera
@@ -126,11 +125,12 @@ export default class AdvancedSpaceCamera {
     // Set up camera
     this.camera = camera;
     this.planets = planets || [];
-    
+
     // Make sure the position is applied to both the position property and the camera position
-    this.position = initialPosition || new THREE.Vector3(149597890 + 10000, 0, 0);
+    this.position =
+      initialPosition || new THREE.Vector3(149597890 + 10000, 0, 0);
     this.camera.position.copy(this.position);
-    
+
     // Synchronize camera quaternion to initial direction
     this.rotation = new THREE.Euler(0, 0, 0, "YXZ");
     this.quaternion = new THREE.Quaternion();
@@ -403,14 +403,19 @@ export default class AdvancedSpaceCamera {
    */
   public setTarget(planet: Planet): void {
     // First validate the planet position
-    if (!planet.position || 
-        isNaN(planet.position.x) || 
-        isNaN(planet.position.y) || 
-        isNaN(planet.position.z)) {
-      console.error(`Cannot set target: Planet ${planet.name} has invalid position:`, planet.position);
+    if (
+      !planet.position ||
+      isNaN(planet.position.x) ||
+      isNaN(planet.position.y) ||
+      isNaN(planet.position.z)
+    ) {
+      console.error(
+        `Cannot set target: Planet ${planet.name} has invalid position:`,
+        planet.position
+      );
       return;
     }
-    
+
     // Create a clean copy to avoid reference issues
     const validatedPlanet = {
       ...planet,
@@ -423,14 +428,17 @@ export default class AdvancedSpaceCamera {
       name: planet.name,
       radius: planet.radius || planet.diameter / 2 || 10000,
       mass: planet.mass || 1.0e24,
-      mesh: planet.mesh
+      mesh: planet.mesh,
     };
-    
+
     // Set the validated target
     this.currentTarget = validatedPlanet;
     this.onTargetChange(validatedPlanet);
-  
-    console.log(`Target set to ${validatedPlanet.name} at position:`, validatedPlanet.position);
+
+    console.log(
+      `Target set to ${validatedPlanet.name} at position:`,
+      validatedPlanet.position
+    );
   }
   /**
    * Clear the current target
@@ -443,46 +451,42 @@ export default class AdvancedSpaceCamera {
   /**
    * Start autopilot navigation to the current target
    */
+  // In startAutopilot, use the dynamic mesh position
   public startAutopilot() {
     if (!this.currentTarget) {
       console.warn("Cannot start autopilot: No target selected");
       return;
     }
-  
-    // Validate target position
-    if (!this.currentTarget.position || 
-        isNaN(this.currentTarget.position.x) || 
-        isNaN(this.currentTarget.position.y) || 
-        isNaN(this.currentTarget.position.z)) {
-      console.error("Cannot start autopilot: Target has invalid position");
-      return;
-    }
-  
+
     // Cancel any existing automated movement
     this.cancelAllAutomatedMovement();
-    
+
     // Store previous mode to return to after autopilot completes
     this.previousMode = this.mode;
     this.setMode(CameraMode.AUTOPILOT);
-  
-    // Store initial values
+
+    // Instead of using a fixed position, get the current position from the target's mesh.
+    const dynamicTargetPosition = this.currentTarget.mesh.position.clone();
+
+    // Set up autopilot using the dynamic position
     this.autopilot = {
       target: this.currentTarget,
       active: true,
       arrivalDistance: this.currentTarget.radius * 5, // Stop at 5x the planet's radius
-      initialDistance: this.position.distanceTo(this.currentTarget.position),
+      initialDistance: this.position.distanceTo(dynamicTargetPosition),
       startTime: Date.now(),
       flightPath: this.calculateFlightPath(
-        this.position.clone(), 
-        this.currentTarget.position.clone()
+        this.position.clone(),
+        dynamicTargetPosition
       ),
       currentPathIndex: 0,
       targetVelocity: new THREE.Vector3(),
       completed: false,
     };
-  
+
     console.log(`Autopilot engaged: Navigating to ${this.currentTarget.name}`);
   }
+
   /**
    * Cancel autopilot and return to previous mode
    */
@@ -490,125 +494,140 @@ export default class AdvancedSpaceCamera {
     if (this.autopilot.active) {
       this.autopilot.active = false;
       this.autopilot.completed = false;
-      
+
       // Switch back to previous mode
       this.setMode(this.previousMode || CameraMode.FREE_FLIGHT);
       console.log("Autopilot disengaged");
     }
   }
 
-// Improved startWarp method for AdvancedSpaceCamera.ts
-public startWarp(): void {
-  if (!this.currentTarget) {
-    console.warn("Cannot initiate warp: No target selected");
-    return;
+  // Improved startWarp method for AdvancedSpaceCamera.ts
+  public startWarp(): void {
+    if (!this.currentTarget) {
+      console.warn("Cannot initiate warp: No target selected");
+      return;
+    }
+
+    // Store previous mode to return to after warp completes
+    this.previousMode = this.mode;
+    this.setMode(CameraMode.WARPING);
+
+    // Deep clone the positions to prevent reference issues
+    const targetPosition = new THREE.Vector3(
+      this.currentTarget.position.x,
+      this.currentTarget.position.y,
+      this.currentTarget.position.z
+    );
+
+    const currentPosition = new THREE.Vector3(
+      this.position.x,
+      this.position.y,
+      this.position.z
+    );
+
+    // Validate positions
+    if (
+      isNaN(targetPosition.x) ||
+      isNaN(targetPosition.y) ||
+      isNaN(targetPosition.z)
+    ) {
+      console.error("Target has invalid position:", targetPosition);
+      this.cancelWarp();
+      return;
+    }
+
+    if (
+      isNaN(currentPosition.x) ||
+      isNaN(currentPosition.y) ||
+      isNaN(currentPosition.z)
+    ) {
+      console.error("Current position is invalid:", currentPosition);
+      this.cancelWarp();
+      return;
+    }
+
+    const distance = currentPosition.distanceTo(targetPosition);
+
+    // Set warp parameters
+    this.warpActive = true;
+    this.warpProgress = 0;
+
+    // Calculate suitable arrival position (offset from planet surface)
+    const arrivalDistance = Math.max(10000, this.currentTarget.radius * 5); // Minimum 10,000km
+
+    // Create direction vector from target to our position (reversed from usual)
+    let arrivalDirection = new THREE.Vector3().subVectors(
+      currentPosition,
+      targetPosition
+    );
+
+    // Fix for when positions are too close (prevents NaN from normalization of zero vector)
+    if (arrivalDirection.length() < 0.001) {
+      console.log("Positions too close, using default direction vector");
+      // Use a default direction if positions are too close
+      arrivalDirection = new THREE.Vector3(1, 0, 0);
+    }
+
+    // Now normalize safely
+    arrivalDirection.normalize();
+
+    // Add this vector to the target position with proper scale
+    const arrivalPosition = targetPosition
+      .clone()
+      .add(arrivalDirection.multiplyScalar(arrivalDistance));
+
+    console.log("Warp parameters:", {
+      from: currentPosition,
+      to: arrivalPosition,
+      arrivalDistance,
+    });
+
+    // Final validation of arrival position
+    if (
+      isNaN(arrivalPosition.x) ||
+      isNaN(arrivalPosition.y) ||
+      isNaN(arrivalPosition.z)
+    ) {
+      console.error("Calculated arrival position is invalid:", arrivalPosition);
+      this.cancelWarp();
+      return;
+    }
+
+    // Create warp animation using TWEEN
+    this.warpTween = new TWEEN.Tween({ progress: 0 })
+      .to({ progress: 1 }, 3000) // 3 second warp
+      .easing(TWEEN.Easing.Quintic.InOut)
+      .onUpdate((obj) => {
+        this.warpProgress = obj.progress;
+
+        // Calculate intermediate position
+        const newPosition = new THREE.Vector3().lerpVectors(
+          currentPosition,
+          arrivalPosition,
+          this.warpProgress
+        );
+
+        // Update position
+        this.position.copy(newPosition);
+
+        // Look at target during warp
+        this.lookAt(this.currentTarget!.position);
+      })
+      .onComplete(() => {
+        // End warp
+        this.warpActive = false;
+        this.warpProgress = 0;
+        this.warpTween = null;
+
+        // Go into orbit mode after warp
+        this.setMode(CameraMode.ORBIT);
+
+        console.log(`Warp complete: Arrived at ${this.currentTarget!.name}`);
+      })
+      .start();
+
+    console.log(`Warp drive engaged: Warping to ${this.currentTarget.name}`);
   }
-
-  // Store previous mode to return to after warp completes
-  this.previousMode = this.mode;
-  this.setMode(CameraMode.WARPING);
-
-  // Deep clone the positions to prevent reference issues
-  const targetPosition = new THREE.Vector3(
-    this.currentTarget.position.x,
-    this.currentTarget.position.y,
-    this.currentTarget.position.z
-  );
-  
-  const currentPosition = new THREE.Vector3(
-    this.position.x,
-    this.position.y,
-    this.position.z
-  );
-  
-  // Validate positions
-  if (isNaN(targetPosition.x) || isNaN(targetPosition.y) || isNaN(targetPosition.z)) {
-    console.error("Target has invalid position:", targetPosition);
-    this.cancelWarp();
-    return;
-  }
-  
-  if (isNaN(currentPosition.x) || isNaN(currentPosition.y) || isNaN(currentPosition.z)) {
-    console.error("Current position is invalid:", currentPosition);
-    this.cancelWarp();
-    return;
-  }
-
-  const distance = currentPosition.distanceTo(targetPosition);
-
-  // Set warp parameters
-  this.warpActive = true;
-  this.warpProgress = 0;
-
-  // Calculate suitable arrival position (offset from planet surface)
-  const arrivalDistance = Math.max(10000, this.currentTarget.radius * 5); // Minimum 10,000km
-  
-  // Create direction vector from target to our position (reversed from usual)
-  let arrivalDirection = new THREE.Vector3()
-    .subVectors(currentPosition, targetPosition);
-    
-  // Fix for when positions are too close (prevents NaN from normalization of zero vector)
-  if (arrivalDirection.length() < 0.001) {
-    console.log("Positions too close, using default direction vector");
-    // Use a default direction if positions are too close
-    arrivalDirection = new THREE.Vector3(1, 0, 0);
-  }
-  
-  // Now normalize safely
-  arrivalDirection.normalize();
-      
-  // Add this vector to the target position with proper scale
-  const arrivalPosition = targetPosition.clone()
-    .add(arrivalDirection.multiplyScalar(arrivalDistance));
-
-  console.log("Warp parameters:", {
-    from: currentPosition,
-    to: arrivalPosition,
-    arrivalDistance
-  });
-
-  // Final validation of arrival position
-  if (isNaN(arrivalPosition.x) || isNaN(arrivalPosition.y) || isNaN(arrivalPosition.z)) {
-    console.error("Calculated arrival position is invalid:", arrivalPosition);
-    this.cancelWarp();
-    return;
-  }
-
-  // Create warp animation using TWEEN
-  this.warpTween = new TWEEN.Tween({ progress: 0 })
-    .to({ progress: 1 }, 3000) // 3 second warp
-    .easing(TWEEN.Easing.Quintic.InOut)
-    .onUpdate((obj) => {
-      this.warpProgress = obj.progress;
-
-      // Calculate intermediate position
-      const newPosition = new THREE.Vector3().lerpVectors(
-        currentPosition,
-        arrivalPosition,
-        this.warpProgress
-      );
-
-      // Update position
-      this.position.copy(newPosition);
-
-      // Look at target during warp
-      this.lookAt(this.currentTarget!.position);
-    })
-    .onComplete(() => {
-      // End warp
-      this.warpActive = false;
-      this.warpProgress = 0;
-      this.warpTween = null;
-
-      // Go into orbit mode after warp
-      this.setMode(CameraMode.ORBIT);
-
-      console.log(`Warp complete: Arrived at ${this.currentTarget!.name}`);
-    })
-    .start();
-
-  console.log(`Warp drive engaged: Warping to ${this.currentTarget.name}`);
-}
   /**
    * Cancel warp and return to previous mode
    */
@@ -622,7 +641,6 @@ public startWarp(): void {
       console.log("Warp drive disengaged");
     }
   }
-  
 
   /**
    * Set the camera to orbit around the current target
@@ -821,75 +839,62 @@ public startWarp(): void {
   /**
    * Update physics for autopilot mode
    */
+  // In updateAutopilot, recalculate the target position each frame:
   private updateAutopilot(deltaTime: number): void {
     if (!this.autopilot.active || !this.autopilot.target) {
       return;
     }
-  
-    // Get current and target positions
-    const targetPosition = this.autopilot.target.position.clone();
+
+    // Always get the target's current position from its mesh
+    const dynamicTargetPosition = this.autopilot.target.mesh.position.clone();
     const currentPosition = this.position.clone();
-    const distance = currentPosition.distanceTo(targetPosition);
-  
-    // Check if we've arrived
+    const distance = currentPosition.distanceTo(dynamicTargetPosition);
+
+    // Check if we've arrived at the dynamic target position
     if (distance <= this.autopilot.arrivalDistance) {
-      console.log(`Autopilot complete: Arrived at ${this.autopilot.target.name}`);
-      
-      // Mark as completed but not active
+      console.log(
+        `Autopilot complete: Arrived at ${this.autopilot.target.name}`
+      );
       this.autopilot.completed = true;
       this.autopilot.active = false;
-  
-      // Switch to orbit mode
       this.startOrbit();
       return;
     }
-  
-    // Calculate progress and adjust speed
-    const progress = Math.max(0, Math.min(1, 
-      1 - (distance / this.autopilot.initialDistance)
-    ));
-  
-    // Start slow, middle fast, end slow (acceleration curve)
+
+    // Calculate progress based on the dynamic target position
+    const progress = Math.max(
+      0,
+      Math.min(1, 1 - distance / this.autopilot.initialDistance)
+    );
+
+    // Use an acceleration curve for speed (accelerate, then decelerate)
     let speedFactor: number;
     if (progress < 0.3) {
-      // Accelerating phase
       speedFactor = Math.pow(progress / 0.3, 2) * 0.5 + 0.1;
     } else if (progress > 0.7) {
-      // Decelerating phase
       speedFactor = Math.pow((1 - progress) / 0.3, 2) * 0.5 + 0.1;
     } else {
-      // Cruising phase
       speedFactor = 0.6;
     }
-  
-    // Calculate direction and apply velocity
+
     const direction = new THREE.Vector3()
-      .subVectors(targetPosition, currentPosition)
+      .subVectors(dynamicTargetPosition, currentPosition)
       .normalize();
-  
-    // Calculate speed based on distance (faster for longer distances)
     const baseSpeed = Math.min(
       this.settings.maxSpeed,
       Math.max(this.settings.movementSpeed, distance / 10)
     );
-  
     const speed = baseSpeed * speedFactor;
     this.velocity = direction.multiplyScalar(speed * deltaTime);
-  
-    // Update position
+
+    // Update the camera position and orientation
     this.position.add(this.velocity);
-  
-    // Look at where we're going
-    this.lookAt(targetPosition);
-  
-    // Update the camera position
+    this.lookAt(dynamicTargetPosition);
     this.camera.position.copy(this.position);
-  
-    // Broadcast updates
+
     this.onPositionChange(this.position);
     this.onSpeedChange(speed);
   }
-  
 
   /**
    * Update orbit mode around the current target
@@ -1065,7 +1070,7 @@ public startWarp(): void {
     if (deltaTime > 1) {
       deltaTime = 0.016; // Default to 60fps
     }
-  
+
     // Update based on current mode
     try {
       switch (this.mode) {
@@ -1073,27 +1078,27 @@ public startWarp(): void {
           this.updateFreeFlight(deltaTime);
           this.applyGravity(deltaTime);
           break;
-  
+
         case CameraMode.AUTOPILOT:
           this.updateAutopilot(deltaTime);
           break;
-  
+
         case CameraMode.ORBIT:
           this.updateOrbit(deltaTime);
           break;
-  
+
         case CameraMode.FOLLOW:
           this.updateFollow(deltaTime);
           break;
-  
+
         case CameraMode.WARPING:
           this.updateWarp(deltaTime);
           break;
       }
-  
+
       // Make sure camera position is synchronized with our internal position
       this.camera.position.copy(this.position);
-      
+
       // Check for nearby planets (could be used for proximity warnings or info displays)
       const closest = this.getClosestPlanet();
       if (closest && closest.distance < closest.planet.radius * 10) {
@@ -1166,16 +1171,16 @@ public startWarp(): void {
     if (!this.autopilot.active || !this.autopilot.target) {
       return 0;
     }
-  
+
     const initialDistance = this.autopilot.initialDistance;
     if (initialDistance <= 0) {
       return 0;
     }
-    
+
     const currentDistance = this.position.distanceTo(
       this.autopilot.target.position
     );
-  
+
     // Calculate progress and clamp between 0-1
     return Math.max(0, Math.min(1, 1 - currentDistance / initialDistance));
   }
