@@ -1,19 +1,4 @@
 /* Cockpit Frame Overlay */
-.cockpit-frame {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 100;
-  background-image: url('/assets/images/cockpit-frame.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  opacity: 0.85;
-}
-
-/* If you don't have a cockpit frame image yet, create one with CSS */
 .cockpit-frame-css {
   position: fixed;
   top: 0;
@@ -24,37 +9,6 @@
   z-index: 100;
 }
 
-.cockpit-frame-css::before,
-.cockpit-frame-css::after {
-  content: '';
-  position: absolute;
-  background-color: rgba(40, 50, 80, 0.6);
-  border: 1px solid rgba(64, 153, 255, 0.5);
-  box-shadow: inset 0 0 15px rgba(64, 153, 255, 0.4);
-}
-
-/* Top frame */
-.cockpit-frame-css::before {
-  top: 0;
-  left: 5%;
-  right: 5%;
-  height: 70px;
-  border-radius: 0 0 40px 40px;
-  border-top: none;
-}
-
-/* Bottom frame */
-.cockpit-frame-css::after {
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
-  border-radius: 50% 50% 0 0;
-  border-bottom: none;
-  box-shadow: inset 0 10px 20px rgba(64, 153, 255, 0.4);
-}
-
-/* Side frames */
 .cockpit-side-left,
 .cockpit-side-right {
   position: absolute;
@@ -80,16 +34,131 @@
   border-radius: 20px 0 0 20px;
 }
 
-/* Holographic HUD elements */
-.hud-element {
-  background: rgba(8, 15, 40, 0.5);
-  backdrop-filter: blur(2px);
-  border: 1px solid rgba(64, 153, 255, 0.3);
-  box-shadow: 0 0 10px rgba(64, 153, 255, 0.2);
+/* Status indicators at top right */
+.status-indicators {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  display: flex;
+  gap: 20px;
+  z-index: 150;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-active {
+  background-color: #60dfff;
+  box-shadow: 0 0 8px #60dfff;
+}
+
+.status-warning {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.status-danger {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.status-label {
+  font-size: 12px;
+  color: #8ab4f8;
+  text-transform: uppercase;
+}
+
+.status-value {
+  font-size: 14px;
+  font-weight: bold;
   color: #e0f2ff;
 }
 
-/* Center targeting reticle - updated for cockpit feel */
+/* Restyle panels for cockpit layout */
+.game-panel {
+  background: rgba(8, 15, 40, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(64, 153, 255, 0.4);
+  box-shadow: 0 0 15px rgba(64, 153, 255, 0.2),
+    inset 0 0 10px rgba(64, 153, 255, 0.1);
+  border-radius: 10px;
+  color: #e0f2ff;
+  overflow: hidden;
+}
+
+/* Make the panel headers look more integrated */
+.game-panel-header {
+  background: linear-gradient(
+    90deg,
+    rgba(14, 30, 70, 0.8) 0%,
+    rgba(25, 52, 120, 0.8) 50%,
+    rgba(14, 30, 70, 0.8) 100%
+  );
+  border-bottom: 1px solid rgba(64, 153, 255, 0.4);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-panel-title {
+  font-weight: bold;
+  color: #60dfff;
+  text-transform: uppercase;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.game-panel-content {
+  padding: 12px;
+}
+
+.game-panel-footer {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(64, 153, 255, 0.2);
+  font-size: 12px;
+  color: #60dfff;
+}
+
+/* HUD warning messages */
+.hud-warning {
+  position: fixed;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 0, 0, 0.2);
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  z-index: 1000;
+  animation: warning-flash 1s infinite alternate;
+}
+
+@keyframes warning-flash {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Center targeting reticle */
 .targeting-reticle {
   position: fixed;
   top: 50%;
@@ -158,109 +227,96 @@
   left: -2px;
 }
 
-/* Restyle panels for cockpit layout */
-.game-panel {
-  background: rgba(8, 15, 40, 0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(64, 153, 255, 0.4);
-  box-shadow: 0 0 15px rgba(64, 153, 255, 0.2),
-    inset 0 0 10px rgba(64, 153, 255, 0.1);
-  border-radius: 10px;
-  color: #e0f2ff;
-  overflow: hidden;
-}
-
-/* Make the panel headers look more integrated */
-.game-panel-header {
-  background: linear-gradient(
-    90deg,
-    rgba(14, 30, 70, 0.8) 0%,
-    rgba(25, 52, 120, 0.8) 50%,
-    rgba(14, 30, 70, 0.8) 100%
-  );
-  border-bottom: 1px solid rgba(64, 153, 255, 0.4);
-  padding: 8px 12px;
-}
-
-/* Subtle glow animation for important elements */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 15px rgba(64, 153, 255, 0.7);
-  }
-  100% {
-    box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
-  }
-}
-
-/* Fix for navigation panel overlap by repositioning */
-.coordinates-panel {
-  top: 70px; /* Move down below the top cockpit frame */
-  left: 50px; /* Move to the right of the left cockpit frame */
-  z-index: 10;
-}
-
-.navigation-panel {
-  bottom: 130px; /* Move up above the bottom cockpit frame */
-  left: 50px; /* Move to the right of the left cockpit frame */
-  z-index: 10;
-}
-
-/* HUD warning messages */
-.hud-warning {
-  position: fixed;
-  top: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(255, 0, 0, 0.2);
-  color: #ff6b6b;
-  border: 1px solid #ff6b6b;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: bold;
+/* Data labels and values */
+.data-label {
+  color: #8ab4f8;
+  font-size: 12px;
+  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  z-index: 1000;
-  animation: warning-flash 1s infinite alternate;
+  letter-spacing: 0.5px;
 }
 
-@keyframes warning-flash {
-  from {
-    opacity: 0.7;
-  }
-  to {
-    opacity: 1;
-  }
+.data-value {
+  color: #e0f2ff;
+  font-size: 14px;
 }
 
-/* Scan line effect for holographic displays */
-.holographic-scanline {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+/* Buttons */
+.game-button {
+  background: rgba(25, 52, 120, 0.6);
+  border: 1px solid rgba(64, 153, 255, 0.4);
+  color: #e0f2ff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.game-button:hover {
+  background: rgba(25, 52, 120, 0.8);
+  border-color: rgba(64, 153, 255, 0.6);
+  box-shadow: 0 0 10px rgba(64, 153, 255, 0.3);
+}
+
+.game-button:active {
+  background: rgba(14, 30, 70, 0.8);
+}
+
+.game-button-primary {
+  background: rgba(33, 150, 243, 0.3);
+  border-color: rgba(33, 150, 243, 0.6);
+}
+
+.game-button-primary:hover {
+  background: rgba(33, 150, 243, 0.4);
+  border-color: rgba(33, 150, 243, 0.8);
+}
+
+.game-button-success {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+.game-button-success:hover {
+  background: rgba(76, 175, 80, 0.4);
+  border-color: rgba(76, 175, 80, 0.8);
+}
+
+.game-button-warning {
+  background: rgba(255, 152, 0, 0.3);
+  border-color: rgba(255, 152, 0, 0.6);
+}
+
+.game-button-warning:hover {
+  background: rgba(255, 152, 0, 0.4);
+  border-color: rgba(255, 152, 0, 0.8);
+}
+
+.game-button-danger {
+  background: rgba(244, 67, 54, 0.3);
+  border-color: rgba(244, 67, 54, 0.6);
+}
+
+.game-button-danger:hover {
+  background: rgba(244, 67, 54, 0.4);
+  border-color: rgba(244, 67, 54, 0.8);
+}
+
+/* Progress bars */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
   overflow: hidden;
-  pointer-events: none;
 }
 
-.holographic-scanline::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    rgba(64, 153, 255, 0) 0%,
-    rgba(64, 153, 255, 0.5) 50%,
-    rgba(64, 153, 255, 0) 100%
-  );
-  animation: scan-line 2s linear infinite;
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #60dfff, #4599ff);
+  width: 0%;
+  transition: width 0.3s ease;
 }
 
 /* Thruster indicators */
@@ -283,6 +339,7 @@
   box-shadow: 0 0 8px rgba(64, 153, 255, 0.3);
   border-radius: 3px;
   overflow: hidden;
+  position: relative;
 }
 
 .thruster-fill {
@@ -301,34 +358,6 @@
   font-size: 10px;
   color: #60dfff;
   text-transform: uppercase;
-}
-
-/* Status indicators at top right */
-.status-indicators {
-  position: fixed;
-  top: 16px;
-  right: 20px;
-  display: flex;
-  gap: 20px;
-  z-index: 150;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.status-label {
-  font-size: 12px;
-  color: #8ab4f8;
-  text-transform: uppercase;
-}
-
-.status-value {
-  font-size: 14px;
-  font-weight: bold;
-  color: #e0f2ff;
 }
 
 /* Speedometer */
@@ -403,6 +432,75 @@
   text-transform: uppercase;
 }
 
+/* Fix for panel positioning */
+.coordinates-panel {
+  width: 280px;
+  top: 80px; 
+  left: 50px;
+  z-index: 110;
+}
+
+.navigation-panel {
+  width: 280px;
+  bottom: 130px;
+  left: 50px;
+  z-index: 110;
+}
+
+.camera-controls-ui .navigation-panel {
+  top: 80px; /* Adjust to avoid overlap */
+  left: 16px;
+  width: 300px;
+}
+
+.planet-selector-panel {
+  width: 320px;
+  left: 330px !important;
+  top: 80px !important;
+  z-index: 105;
+}
+
+.controls-help-panel {
+  width: 320px;
+  right: 16px !important;
+  top: 80px !important;
+  z-index: 105;
+}
+
+.time-controls-panel {
+  width: 280px;
+  bottom: 16px;
+  right: 16px;
+  z-index: 110;
+}
+
+.minimap-panel {
+  width: 260px;
+  height: 300px;
+  top: 80px;
+  right: 16px;
+  z-index: 110;
+}
+
+/* Animation for pulse effect */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(64, 153, 255, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
+  }
+}
+
+/* Fix for holographic map */
+.holographic-map {
+  width: 100%;
+  height: 240px;
+}
+
 /* Make game HUD fill the screen to properly contain the cockpit */
 .global-game-ui {
   position: fixed;
@@ -416,4 +514,40 @@
 
 .global-game-ui * {
   pointer-events: auto;
+}
+
+/* Scan line effect for holographic displays */
+.holographic-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.holographic-scanline::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(64, 153, 255, 0) 0%,
+    rgba(64, 153, 255, 0.5) 50%,
+    rgba(64, 153, 255, 0) 100%
+  );
+  animation: scan-line 2s linear infinite;
+}
+
+@keyframes scan-line {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
 }

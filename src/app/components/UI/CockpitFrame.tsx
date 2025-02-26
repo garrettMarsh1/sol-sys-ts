@@ -25,7 +25,7 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
     const percent = Math.min(100, (velocityMagnitude / maxSpeed) * 100);
     setSpeedPercent(percent);
 
-    // Set forward thrust
+    // Set thrust values based on velocity components
     setForwardThrust(Math.abs(cameraVelocity.z) / maxSpeed * 100);
     setLateralThrust(Math.abs(cameraVelocity.x) / maxSpeed * 100);
     setVerticalThrust(Math.abs(cameraVelocity.y) / maxSpeed * 100);
@@ -33,6 +33,8 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
     // Show warning at high speeds
     if (velocityMagnitude > 75) {
       setWarning("WARNING: APPROACHING MAXIMUM VELOCITY");
+    } else if (velocityMagnitude > 50) {
+      setWarning("CAUTION: HIGH VELOCITY");
     } else {
       setWarning(null);
     }
