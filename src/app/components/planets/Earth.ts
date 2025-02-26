@@ -1,6 +1,8 @@
+// src/app/components/planets/Earth.ts
 import * as THREE from 'three';
 import Sun from './Sun';
-import { Planet } from '../Interface/PlanetInterface'
+import { Planet } from '../Interface/PlanetInterface';
+import { textureLoader } from "../../Utils/TextureLoader";
 
 const vertexShader = `
 precision highp float;
@@ -37,8 +39,7 @@ void main() {
 }
 `;
 
-
-class Earth implements Planet{
+class Earth implements Planet {
     public name: string;
     public position: THREE.Vector3;
     public velocity: THREE.Vector3;
@@ -76,18 +77,19 @@ class Earth implements Planet{
     public material: THREE.ShaderMaterial;
     public mesh: THREE.Mesh;
     public lastUpdateTime: number;
-    radius!: number;
+    public radius: number;
     composition?: Record<string, number> | undefined;
     albedo?: number | undefined;
     atmosphereScale?: number | undefined;
     lightDirection?: THREE.Vector3 | undefined;
 
-    constructor() {
+    constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
         this.name = "Earth";
         this.position = new THREE.Vector3(149597890, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.mass = 5.972e24; // kg
         this.diameter = 12742; // km
+        this.radius = this.diameter / 2;
         this.density = 5514; // kg/m^3
         this.gravity = 9.807; // m/s^2
         this.escapeVelocity = 11.186; // km/s
@@ -106,8 +108,11 @@ class Earth implements Planet{
         this.numberOfMoons = 1; // unitless
         this.hasRingSystem = false; // boolean
         this.hasGlobalMagneticField = true; // boolean
-        this.texture = new THREE.TextureLoader().load('/assets/images/earth.jpeg');
-        this.nightTexture = new THREE.TextureLoader().load('/assets/images/8k_earth_nightmap.jpeg');
+        
+        // Using our enhanced texture loader
+        this.texture = textureLoader.load('/assets/images/earth.jpeg');
+        this.nightTexture = textureLoader.load('/assets/images/8k_earth_nightmap.jpeg');
+        
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
@@ -143,35 +148,47 @@ class Earth implements Planet{
                 }
             ]
         };
+        
         this.earthParent = new THREE.Object3D();
         
-        this.material = new THREE.ShaderMaterial({
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            uniforms: {
-                earthMap: { value: this.texture },
-                nightMap: { value: this.nightTexture },
-                lightPos: { value: new THREE.Vector3(0, 0, 0) } // Sun position
-            }
-        });
+        // Use a basic material as fallback if shader fails
+        try {
+            this.material = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                uniforms: {
+                    earthMap: { value: this.texture },
+                    nightMap: { value: this.nightTexture },
+                    lightPos: { value: new THREE.Vector3(0, 0, 0) } // Sun position
+                }
+            });
+        } catch (error) {
+            console.error("Failed to create Earth shader, using fallback material:", error);
+            // Fallback to a basic material
+            this.material = new THREE.MeshPhongMaterial({
+                map: this.texture
+            }) as any;
+        }
 
-        this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(this.diameter / 2, 64, 64),
-            this.material
-        );
+        // Create the mesh with proper geometry
+        const geometry = new THREE.SphereGeometry(this.diameter / 2, 64, 64);
+        this.mesh = new THREE.Mesh(geometry, this.material);
+        this.mesh.name = this.name;
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-
-       
 
         this.earthParent = new THREE.Object3D();
         this.earthParent.add(this.mesh);
         this.earthParent.lookAt(new THREE.Vector3(10, 0, 0));
 
         this.velocity = new THREE.Vector3(0, this.solveKepler(this.meanAnomaly, this.eccentricity), 0);
-
         this.lastUpdateTime = Date.now();
+        
+        // Add mesh to the scene
+        scene.add(this.mesh);
+        
+        // Log successful creation
+        console.log(`Created ${this.name} planet at:`, this.position);
     }
-
 
     calculateForce() {
         const sunMass = Sun.mass;
@@ -204,14 +221,20 @@ class Earth implements Planet{
         const z = 0; // Assuming orbit in the xy-plane
 
         this.mesh.position.set(x, y, z);
+        this.position = this.mesh.position.clone(); // Keep position updated
         this.earthParent.position.set(x, y, z);
     }
 
-    update() {
+    update(dt: number) {
         this.calculateOrbit();
-        // console.log(this.mesh.position)
-        this.material.uniforms.lightPos.value.set(0, 0, 0); // Ensure light position is set correctly
-        this.mesh.rotation.y += (2 * Math.PI) / (24 * 60 * 60); // Full rotation in 24 hours
+        
+        // Update the light source position (Sun)
+        if (this.material instanceof THREE.ShaderMaterial) {
+            this.material.uniforms.lightPos.value.set(0, 0, 0);
+        }
+        
+        // Add Earth rotation
+        this.mesh.rotation.y += (2 * Math.PI) / (24 * 60 * 60 * dt * 100); // Scaled rotation for better visibility
     }
 }
 

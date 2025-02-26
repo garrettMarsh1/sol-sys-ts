@@ -375,18 +375,30 @@ private setupCamera() {
    * Set up scene lighting
    */
   private setupLights() {
-    if (this.debug) console.log("Setting up lights");
-
-    // Sun light at origin
-    const directionalLight = new THREE.PointLight(0xffffff, 1.0);
-    directionalLight.position.set(0, 0, 0);
-    this.scene.add(directionalLight);
-
-    // Add ambient light for better visibility
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    if (this.debug) console.log("Setting up enhanced lighting system");
+  
+    // Sun light at origin - this is the primary light source
+    const sunLight = new THREE.PointLight(0xffffff, 1.5);
+    sunLight.position.set(0, 0, 0);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    this.scene.add(sunLight);
+  
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.8); // Increased intensity
     this.scene.add(ambientLight);
-
-    if (this.debug) console.log("Lights set up successfully");
+    
+    const cameraLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    cameraLight.position.set(0, 1, 0);
+    cameraLight.castShadow = false;
+    this.camera.add(cameraLight); // Attach to camera so it moves with view
+    this.scene.add(this.camera); // Ensure camera is in scene for its children
+  
+    // Add a hemisphere light for better global illumination
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.2);
+    this.scene.add(hemisphereLight);
+  
+    if (this.debug) console.log("Enhanced lighting system set up successfully");
   }
 
   /**
