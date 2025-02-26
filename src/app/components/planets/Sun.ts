@@ -2,7 +2,10 @@ import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { LensflareElement } from "three/examples/jsm/objects/Lensflare.js";
 import { Planet } from "../Interface/PlanetInterface";
+
+const sunTexture = new THREE.TextureLoader().load("/assets/images/sun.jpeg");
 
 class Sun implements Planet {
   public name: string;
@@ -26,7 +29,6 @@ class Sun implements Planet {
   private bloomComposer!: EffectComposer;
   static mass: number;
   static position: number;
-  public texture: THREE.Texture;
 
   constructor(
     renderer: THREE.WebGLRenderer,
@@ -36,9 +38,6 @@ class Sun implements Planet {
     this.renderer = renderer;
     this.scene = scene;
     this.camera = camera;
-
-    // Create a basic texture first (will be replaced when running in browser)
-    this.texture = new THREE.Texture();
 
     this.name = "Sun";
     this.mass = 1.989e30; // kg
@@ -69,7 +68,8 @@ class Sun implements Planet {
       ],
     };
 
-    // Setup will be done in init() which is called after construction
+    this.setupSun();
+    this.setupBloom();
   }
   diameter!: number;
   density!: number;
@@ -89,6 +89,7 @@ class Sun implements Planet {
   numberOfMoons!: number;
   hasRingSystem!: boolean;
   hasGlobalMagneticField!: boolean;
+  texture!: THREE.Texture;
   semiMajorAxis!: number;
   semiMinorAxis!: number;
   eccentricity!: number;
@@ -100,37 +101,10 @@ class Sun implements Planet {
   lastUpdateTime!: number;
   solveKepler!: (M: number, e: number) => number;
 
-  public init() {
-    if (typeof window !== "undefined") {
-      // Only run this on the client side
-      this.loadTexture();
-      this.setupSun();
-      this.setupBloom();
-    } else {
-      // Create a minimal mesh for server-side rendering
-      this.createMinimalMesh();
-    }
-  }
-
-  private loadTexture() {
-    if (typeof window !== "undefined") {
-      this.texture = new THREE.TextureLoader().load("/assets/images/sun.jpeg");
-    }
-  }
-
-  private createMinimalMesh() {
-    // Create a minimal mesh for server-side rendering
-    this.mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(this.radius, 16, 16),
-      new THREE.MeshBasicMaterial({ color: 0xffdd00 })
-    );
-    this.mesh.position.set(0, 0, 0);
-  }
-
   private setupSun() {
     this.mesh = new THREE.Mesh(
       new THREE.SphereGeometry(this.radius, 64, 64),
-      new THREE.MeshBasicMaterial({ map: this.texture })
+      new THREE.MeshBasicMaterial({ map: sunTexture })
     );
     this.mesh.position.set(0, 0, 0);
     this.scene.add(this.mesh);
@@ -154,12 +128,9 @@ class Sun implements Planet {
   }
 
   public update() {
-    if (typeof window === "undefined") return;
-
+    const distance = this.camera.position.distanceTo(this.mesh.position);
     this.mesh.rotation.y += 0.0005;
-    if (this.bloomComposer) {
-      this.bloomComposer.render();
-    }
+    this.bloomComposer.render();
   }
 }
 

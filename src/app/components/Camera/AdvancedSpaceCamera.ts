@@ -125,7 +125,7 @@ export default class AdvancedSpaceCamera {
     this.camera = camera;
     this.planets = planets;
     this.position =
-      initialPosition || new THREE.Vector3(150000000, 50000000, 50000000);
+      initialPosition || new THREE.Vector3(147099221.74991804 + 10000, 0, 0);
     this.camera.position.copy(this.position);
 
     // Setup raycaster for planet selection

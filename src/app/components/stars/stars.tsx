@@ -19,11 +19,7 @@ class Stars {
     this.scene = scene;
     this.renderer = renderer;
     this.camera = camera;
-
-    // Only initialize if we're in the browser
-    if (typeof window !== "undefined") {
-      this.init();
-    }
+    this.init();
   }
 
   init() {
@@ -56,8 +52,6 @@ class Stars {
   }
 
   setupBloom() {
-    if (typeof window === "undefined") return;
-
     const renderPass = new RenderPass(this.scene, this.camera);
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth, window.innerHeight),
