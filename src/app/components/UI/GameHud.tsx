@@ -4,6 +4,7 @@ import NavigationControls from "./NavigationControls";
 import HolographicMiniMap from "./MiniMap";
 import TimeControls from "./TimeControls";
 import CoordinatesDisplay from "./CoordinatesDisplay";
+import CockpitFrame from "./CockpitFrame";
 import "./GameUI.css";
 
 interface GameHUDProps {
@@ -57,21 +58,18 @@ const GameHUD: React.FC<GameHUDProps> = ({
 
   return (
     <div className="global-game-ui">
-      <div className="absolute top-0 left-0 right-0 game-panel-header h-12 flex justify-between items-center px-4">
+      {/* Cockpit Frame - New component */}
+      <CockpitFrame cameraVelocity={cameraVelocity} />
+
+      {/* Title Bar - Reduced to minimal display */}
+      <div className="absolute top-0 left-0 right-0 h-12 flex justify-center items-center px-4 z-50 pointer-events-none">
         <div className="text-xl font-bold text-cyan-300 flex items-center">
-          <div className="mr-2 text-2xl items-center"></div>
+          <span className="text-sm mr-2 text-cyan-400">ALPHA v1.0</span>
           Solar System Explorer
-        </div>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setShowHelp(!showHelp)}
-            className="game-button"
-          >
-            {showHelp ? "Hide Help" : "Help"}
-          </button>
         </div>
       </div>
 
+      {/* Help Dialog */}
       {showHelp && (
         <div className="absolute inset-0 bg-black bg-opacity-90 text-white p-8 overflow-auto z-50">
           <div className="max-w-4xl mx-auto game-panel p-6">
@@ -185,10 +183,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
         </div>
       )}
 
-      {showTargetingReticle && currentPlanet && (
-        <div className="targeting-reticle"></div>
-      )}
-
+      {/* Coordinates Display - Repositioned for cockpit layout */}
       <CoordinatesDisplay
         position={cameraPosition}
         velocity={velocityMagnitude}
@@ -204,11 +199,23 @@ const GameHUD: React.FC<GameHUDProps> = ({
         currentPlanet={currentPlanet}
       />
 
+      {/* Navigation Controls - Repositioned for cockpit layout */}
       <NavigationControls
         onToggleCameraMode={onToggleCameraMode}
         cameraMode={cameraMode}
       />
 
+      {/* Help Button - Floating in bottom center */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="game-button"
+        >
+          {showHelp ? "Hide Help" : "Help"}
+        </button>
+      </div>
+
+      {/* Holographic Mini Map - Kept in top right */}
       <HolographicMiniMap
         cameraPosition={cameraPosition}
         planets={planets}
@@ -216,8 +223,10 @@ const GameHUD: React.FC<GameHUDProps> = ({
         onSelectPlanet={(planet) => onWarpToPlanet(planet.name)}
       />
 
+      {/* Time Controls - Kept in bottom right */}
       <TimeControls timeScale={timeScale} onSetTimeScale={onSetTimeScale} />
 
+      {/* Planet Info Panel - Shown in center when a planet is selected */}
       {currentPlanet && showPlanetInfo && (
         <PlanetInfoPanel
           planet={currentPlanet}

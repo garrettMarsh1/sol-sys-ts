@@ -50,7 +50,7 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
   };
 
   return (
-    <div className="absolute top-16 left-4 coordinates-panel game-panel">
+    <div className="absolute top-[80px] left-[55px] coordinates-panel game-panel">
       <div className="game-panel-header">
         <div className="game-panel-title">Navigation System</div>
         <div
@@ -120,6 +120,9 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
           </div>
         )}
       </div>
+
+      {/* Add a scan line effect */}
+      <div className="holographic-scanline"></div>
     </div>
   );
 };
