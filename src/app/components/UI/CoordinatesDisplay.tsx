@@ -27,9 +27,9 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
   // Format large numbers to be more readable with proper units
   const formatDistance = (value: number): string => {
     if (Math.abs(value) >= 1000000) {
-      return `${(value / 1000000).toFixed(2)}`;
+      return `${(value / 1000000).toFixed(2)} M`;
     } else if (Math.abs(value) >= 1000) {
-      return `${(value / 1000).toFixed(2)}`;
+      return `${(value / 1000).toFixed(2)} K`;
     } else {
       return `${value.toFixed(2)}`;
     }
@@ -50,7 +50,7 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
   };
 
   return (
-    <div className="absolute top-[80px] left-[55px] coordinates-panel game-panel">
+    <div className="absolute top-[80px] left-[50px] coordinates-panel game-panel">
       <div className="game-panel-header">
         <div className="game-panel-title">Navigation System</div>
         <div
@@ -66,17 +66,17 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
           <div className="grid grid-cols-2 gap-x-2 gap-y-1">
             <div className="data-label">X:</div>
             <div className="data-value font-mono">
-              {formatDistance(position.x)}
+              {formatDistance(position.x)} km
             </div>
 
             <div className="data-label">Y:</div>
             <div className="data-value font-mono">
-              {formatDistance(position.y)}
+              {formatDistance(position.y)} km
             </div>
 
             <div className="data-label">Z:</div>
             <div className="data-value font-mono">
-              {formatDistance(position.z)}
+              {formatDistance(position.z)} km
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
                 <>
                   <div className="data-label">Distance:</div>
                   <div className="data-value font-mono">
-                    {formatDistance(targetDistance)}
+                    {formatDistance(targetDistance)} km
                   </div>
                 </>
               )}

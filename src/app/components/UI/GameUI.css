@@ -1,3 +1,5 @@
+/* No Man's Sky Style UI - Main CSS */
+
 /* Cockpit Frame Overlay */
 .cockpit-frame-css {
   position: fixed;
@@ -6,7 +8,7 @@
   right: 0;
   bottom: 0;
   pointer-events: none;
-  z-index: 100;
+  z-index: 5; /* Lower z-index to avoid blocking panels */
 }
 
 .cockpit-side-left,
@@ -15,10 +17,10 @@
   top: 80px;
   bottom: 120px;
   width: 40px;
-  background-color: rgba(40, 50, 80, 0.6);
+  background-color: rgba(20, 30, 50, 0.6);
   border: 1px solid rgba(64, 153, 255, 0.5);
-  box-shadow: inset 0 0 15px rgba(64, 153, 255, 0.4);
-  z-index: 100;
+  box-shadow: inset 0 0 15px rgba(64, 153, 255, 0.3);
+  z-index: 5;
   pointer-events: none;
 }
 
@@ -34,6 +36,34 @@
   border-radius: 20px 0 0 20px;
 }
 
+/* Add cockpit frame top and bottom elements */
+.cockpit-frame-css::before,
+.cockpit-frame-css::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 5;
+  background-color: rgba(20, 30, 50, 0.6);
+  border: 1px solid rgba(64, 153, 255, 0.4);
+  box-shadow: inset 0 0 15px rgba(64, 153, 255, 0.3);
+}
+
+.cockpit-frame-css::before {
+  top: 0;
+  height: 60px;
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+}
+
+.cockpit-frame-css::after {
+  bottom: 0;
+  height: 100px;
+  border-bottom: none;
+  border-radius: 50% 50% 0 0 / 20px 20px 0 0;
+}
+
 /* Status indicators at top right */
 .status-indicators {
   position: fixed;
@@ -41,7 +71,8 @@
   right: 20px;
   display: flex;
   gap: 20px;
-  z-index: 150;
+  z-index: 20;
+  pointer-events: none; /* Only make indicators non-interactive */
 }
 
 .status-item {
@@ -84,7 +115,7 @@
   color: #e0f2ff;
 }
 
-/* Restyle panels for cockpit layout */
+/* Restyle panels for NMS cockpit layout */
 .game-panel {
   background: rgba(8, 15, 40, 0.8);
   backdrop-filter: blur(8px);
@@ -94,9 +125,11 @@
   border-radius: 10px;
   color: #e0f2ff;
   overflow: hidden;
+  transition: all 0.2s ease;
+  pointer-events: auto; /* Make panels interactive */
 }
 
-/* Make the panel headers look more integrated */
+/* Make the panel headers look more NMS-like */
 .game-panel-header {
   background: linear-gradient(
     90deg,
@@ -130,6 +163,27 @@
   color: #60dfff;
 }
 
+/* Game panel button - make sure it's interactive */
+.game-panel-button {
+  background: rgba(20, 40, 80, 0.6);
+  border: 1px solid rgba(64, 153, 255, 0.5);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60dfff;
+  cursor: pointer;
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+
+.game-panel-button:hover {
+  background: rgba(64, 153, 255, 0.3);
+  box-shadow: 0 0 10px rgba(64, 153, 255, 0.4);
+}
+
 /* HUD warning messages */
 .hud-warning {
   position: fixed;
@@ -147,6 +201,7 @@
   letter-spacing: 1px;
   z-index: 1000;
   animation: warning-flash 1s infinite alternate;
+  pointer-events: none;
 }
 
 @keyframes warning-flash {
@@ -170,7 +225,7 @@
   border-radius: 50%;
   box-shadow: 0 0 15px rgba(64, 153, 255, 0.4);
   pointer-events: none;
-  z-index: 100;
+  z-index: 4;
   animation: pulse 2s infinite ease-in-out;
 }
 
@@ -241,7 +296,7 @@
   font-size: 14px;
 }
 
-/* Buttons */
+/* Buttons - ensure they're clickable */
 .game-button {
   background: rgba(25, 52, 120, 0.6);
   border: 1px solid rgba(64, 153, 255, 0.4);
@@ -251,6 +306,8 @@
   font-size: 12px;
   transition: all 0.2s;
   text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .game-button:hover {
@@ -327,7 +384,7 @@
   transform: translateX(-50%);
   display: flex;
   gap: 15px;
-  z-index: 150;
+  z-index: 20;
   pointer-events: none;
 }
 
@@ -374,7 +431,8 @@
   overflow: hidden;
   box-shadow: 0 0 15px rgba(64, 153, 255, 0.2),
     inset 0 0 10px rgba(64, 153, 255, 0.1);
-  z-index: 150;
+  z-index: 20;
+  pointer-events: none;
 }
 
 .speedometer-needle {
@@ -432,54 +490,83 @@
   text-transform: uppercase;
 }
 
-/* Fix for panel positioning */
+/* Fix for panel positioning - NO OVERLAPS */
 .coordinates-panel {
   width: 280px;
   top: 80px; 
   left: 50px;
-  z-index: 110;
+  z-index: 15;
 }
 
 .navigation-panel {
   width: 280px;
-  bottom: 130px;
+  bottom: 120px;
   left: 50px;
-  z-index: 110;
+  z-index: 15;
 }
 
 .camera-controls-ui .navigation-panel {
-  top: 80px; /* Adjust to avoid overlap */
-  left: 16px;
-  width: 300px;
+  top: 80px;
+  left: 50px;
+  width: 280px;
+  z-index: 15;
 }
 
 .planet-selector-panel {
   width: 320px;
-  left: 330px !important;
+  left: 350px !important;
   top: 80px !important;
-  z-index: 105;
+  z-index: 16;
 }
 
 .controls-help-panel {
   width: 320px;
-  right: 16px !important;
+  right: 50px !important;
   top: 80px !important;
-  z-index: 105;
+  z-index: 16;
 }
 
 .time-controls-panel {
   width: 280px;
-  bottom: 16px;
-  right: 16px;
-  z-index: 110;
+  bottom: 120px;
+  right: 50px;
+  z-index: 15;
 }
 
 .minimap-panel {
   width: 260px;
-  height: 300px;
+  height: 280px;
   top: 80px;
-  right: 16px;
-  z-index: 110;
+  right: 50px;
+  z-index: 15;
+}
+
+/* NMS style tabs */
+.game-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(64, 153, 255, 0.3);
+  background: rgba(14, 30, 70, 0.5);
+}
+
+.game-tab {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #8ab4f8;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.game-tab:hover {
+  color: #60dfff;
+  background: rgba(64, 153, 255, 0.1);
+}
+
+.game-tab-active {
+  color: #60dfff;
+  border-bottom-color: #60dfff;
+  background: rgba(64, 153, 255, 0.15);
 }
 
 /* Animation for pulse effect */
@@ -498,10 +585,25 @@
 /* Fix for holographic map */
 .holographic-map {
   width: 100%;
-  height: 240px;
+  height: 230px;
+  pointer-events: auto;
 }
 
-/* Make game HUD fill the screen to properly contain the cockpit */
+/* Planet image in info panel */
+.planet-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+/* Dark panel for planet info */
+.game-panel-dark {
+  background: rgba(5, 10, 25, 0.7);
+  border-radius: 6px;
+}
+
+/* Global game UI container */
 .global-game-ui {
   position: fixed;
   top: 0;
@@ -509,9 +611,10 @@
   right: 0;
   bottom: 0;
   pointer-events: none;
-  z-index: 100;
+  z-index: 10;
 }
 
+/* Allow pointer events on children but not the container */
 .global-game-ui * {
   pointer-events: auto;
 }

@@ -1,3 +1,4 @@
+// src/app/components/UI/GameHud.tsx
 import React, { useState, useEffect } from "react";
 import PlanetInfoPanel from "./PlanetInfoPanel";
 import NavigationControls from "./NavigationControls";
