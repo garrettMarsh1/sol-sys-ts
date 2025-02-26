@@ -30,6 +30,7 @@ import TrajectoryVisualization from "./Camera/TrajectoryVisualization";
 const MainScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<MainSceneWithAdvancedCamera | null>(null);
+  const isInitializedRef = useRef<boolean>(false); // Use a ref to track initialization
 
   // State for UI components
   const [currentPlanet, setCurrentPlanet] = useState<Planet | null>(null);
@@ -45,11 +46,13 @@ const MainScene: React.FC = () => {
 
   // Setup main scene with advanced camera
   useEffect(() => {
-    if (containerRef.current) {
+    if (containerRef.current && !isInitializedRef.current) {
       try {
-        // Add debugging console log
         console.log("Initializing MainSceneWithAdvancedCamera");
-
+        
+        // Mark as initialized to prevent double initialization
+        isInitializedRef.current = true;
+        
         sceneRef.current = new MainSceneWithAdvancedCamera(
           containerRef.current,
           {
@@ -66,6 +69,7 @@ const MainScene: React.FC = () => {
         console.log("MainSceneWithAdvancedCamera initialized successfully");
       } catch (error) {
         console.error("Error initializing scene:", error);
+        isInitializedRef.current = false; // Reset if initialization fails
       }
     }
 
@@ -73,37 +77,51 @@ const MainScene: React.FC = () => {
       if (sceneRef.current) {
         console.log("Disposing scene");
         sceneRef.current.dispose();
+        sceneRef.current = null;
+        isInitializedRef.current = false;
       }
     };
-  }, []);
+  }, []); // Empty dependency array to run only once
 
   // Handle time scale changes
   const handleSetTimeScale = (scale: number) => {
     setTimeScale(scale);
-    sceneRef.current?.setTimeScale(scale);
+    if (sceneRef.current) {
+      sceneRef.current.setTimeScale(scale);
+    }
   };
 
   // Camera mode handling
   const handleSetCameraMode = (mode: CameraMode) => {
-    sceneRef.current?.setCameraMode(mode);
+    if (sceneRef.current) {
+      sceneRef.current.setCameraMode(mode);
+    }
   };
 
   // Planet interaction methods
   const handleWarpToPlanet = (planetName: string) => {
-    sceneRef.current?.warpToPlanet(planetName);
+    if (sceneRef.current) {
+      sceneRef.current.warpToPlanet(planetName);
+    }
   };
 
   const handleFollowPlanet = (planetName: string) => {
-    sceneRef.current?.followPlanet(planetName);
+    if (sceneRef.current) {
+      sceneRef.current.followPlanet(planetName);
+    }
   };
 
   // Autopilot control
   const handleStartAutopilot = () => {
-    sceneRef.current?.startAutopilot();
+    if (sceneRef.current) {
+      sceneRef.current.startAutopilot();
+    }
   };
 
   const handleCancelAutopilot = () => {
-    sceneRef.current?.cancelAutopilot();
+    if (sceneRef.current) {
+      sceneRef.current.cancelAutopilot();
+    }
   };
 
   return (
@@ -181,6 +199,7 @@ class MainSceneWithAdvancedCamera {
   private lastFrameTime: number = 0;
   private isInitialized: boolean = false;
   private trajectoryVisualization: TrajectoryVisualization | null = null;
+  private animationFrameId: number | null = null; // To track the animation frame
   // Debug flag
   private debug: boolean = true;
 
@@ -214,6 +233,7 @@ class MainSceneWithAdvancedCamera {
     if (this.debug)
       console.log("MainSceneWithAdvancedCamera constructor called");
 
+    // Initialize immediately
     this.init();
   }
 
@@ -244,9 +264,11 @@ class MainSceneWithAdvancedCamera {
 
       if (this.debug) console.log("First render completed");
 
+      // Mark as initialized before starting animation loop
+      this.isInitialized = true;
+      
       // Start animation loop
       this.animate();
-      this.isInitialized = true;
 
       // Handle window resize
       window.addEventListener("resize", this.onWindowResize);
@@ -254,6 +276,7 @@ class MainSceneWithAdvancedCamera {
       if (this.debug) console.log("Scene initialization complete");
     } catch (error) {
       console.error("Error in scene initialization:", error);
+      this.isInitialized = false; // Ensure we don't try to animate if initialization failed
     }
   }
 
@@ -298,6 +321,8 @@ class MainSceneWithAdvancedCamera {
    */
   private setupCamera() {
     if (this.debug) console.log("Setting up camera");
+    
+    // Create a perspective camera with appropriate parameters
     this.camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
@@ -305,21 +330,24 @@ class MainSceneWithAdvancedCamera {
       1e12
     );
 
-    // Set initial camera position
-    this.camera.position.set(147099221.74991804 + 10000, 0, 0);
+    // Set initial camera position - Earth position + offset
+    const initialPosition = new THREE.Vector3(0 + 1000000, 0, 0);
+    this.camera.position.copy(initialPosition);
 
-    // Add an axis helper to visualize orientation (for debugging)
     if (this.debug) {
       const axisHelper = new THREE.AxesHelper(1000000);
       this.scene.add(axisHelper);
       console.log("Camera initialized:", this.camera.position);
     }
 
-    // Initialize the advanced camera system with initial position
+    // Ensure we have planets array populated before creating camera
+    const planetObjects = this.planets ? this.planets.map(p => p.object) : [];
+
+    // Initialize the advanced camera with the same position we set above
     this.advancedCamera = new AdvancedSpaceCamera(
       this.camera,
-      [], // Will be populated after planets are created
-      new THREE.Vector3(147099221.74991804 + 10000, 0, 0), // Starting position
+      planetObjects,
+      initialPosition,
       {
         onModeChange: (mode) => this.callbacks.onModeChange(mode),
         onTargetChange: (target) => this.callbacks.onPlanetSelect(target),
@@ -348,7 +376,7 @@ class MainSceneWithAdvancedCamera {
     this.scene.add(directionalLight);
 
     // Add ambient light for better visibility
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Increased brightness for debugging
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
     this.scene.add(ambientLight);
 
     if (this.debug) console.log("Lights set up successfully");
@@ -387,7 +415,7 @@ class MainSceneWithAdvancedCamera {
     ];
 
     try {
-      this.planets = planetClasses.map((PlanetClass, index) => {
+      this.planets = planetClasses.map((PlanetClass) => {
         if (this.debug) console.log(`Creating planet: ${PlanetClass.name}`);
 
         const planet = new PlanetClass(this.renderer, this.scene, this.camera);
@@ -416,9 +444,6 @@ class MainSceneWithAdvancedCamera {
           mesh: planet.mesh,
         };
       });
-
-      // Update the advanced camera with the created planets
-      this.advancedCamera.setPlanets(this.planets.map((p) => p.object));
 
       if (this.debug) console.log("Planets setup complete");
     } catch (error) {
@@ -484,12 +509,14 @@ class MainSceneWithAdvancedCamera {
    * Main animation loop
    */
   private animate = () => {
+    // Verify initialization flag before proceeding
     if (!this.isInitialized) {
       if (this.debug) console.log("Animation loop aborted: not initialized");
       return;
     }
 
-    requestAnimationFrame(this.animate);
+    // Request the next frame
+    this.animationFrameId = requestAnimationFrame(this.animate);
 
     try {
       // Calculate delta time
@@ -509,11 +536,13 @@ class MainSceneWithAdvancedCamera {
         this.planets.forEach((planet) => planet.update(scaledDelta));
       }
 
-      // Update camera (always uses real delta time, not scaled)
-      this.advancedCamera.update(deltaTime);
+      // Update advanced camera (always uses real delta time, not scaled)
+      if (this.advancedCamera) {
+        this.advancedCamera.update(deltaTime);
+      }
 
       // Update autopilot and warp progress for UI
-      if (this.advancedCamera.isAutopilotActive()) {
+      if (this.advancedCamera && this.advancedCamera.isAutopilotActive()) {
         this.callbacks.onAutopilotProgressUpdate(
           this.advancedCamera.getAutopilotProgress()
         );
@@ -526,7 +555,7 @@ class MainSceneWithAdvancedCamera {
         }
       }
 
-      if (this.advancedCamera.isWarpActive()) {
+      if (this.advancedCamera && this.advancedCamera.isWarpActive()) {
         this.callbacks.onWarpProgressUpdate(
           this.advancedCamera.getWarpProgress()
         );
@@ -535,25 +564,33 @@ class MainSceneWithAdvancedCamera {
       // Update TWEEN animations
       TWEEN.update();
 
-      // Try a simple direct render first (fallback)
-      this.renderer.render(this.scene, this.camera);
-
-      // Then try the composer render
-      try {
-        this.renderer.clear();
-        this.normalComposer.render();
-        this.bloomComposer.render();
-      } catch (error) {
-        console.error(
-          "Error in composer render, falling back to basic render:",
-          error
-        );
-        // Already did the basic render above
-      }
+      // Render the scene
+      this.render();
     } catch (error) {
       console.error("Error in animation loop:", error);
     }
   };
+
+  /**
+   * Render the scene with post-processing
+   */
+  private render() {
+    try {
+      // Try using composers first
+      this.renderer.clear();
+      
+      // Try the composer render, with fallback to basic render
+      try {
+        this.normalComposer.render();
+        this.bloomComposer.render();
+      } catch (error) {
+        console.warn("Composer render failed, using basic render:", error);
+        this.renderer.render(this.scene, this.camera);
+      }
+    } catch (error) {
+      console.error("Render error:", error);
+    }
+  }
 
   /**
    * Handle window resize
@@ -587,6 +624,8 @@ class MainSceneWithAdvancedCamera {
    * Set camera mode
    */
   public setCameraMode(mode: CameraMode) {
+    if (!this.advancedCamera) return;
+    
     switch (mode) {
       case CameraMode.FREE_FLIGHT:
         this.advancedCamera.cancelAllAutomatedMovement();
@@ -604,13 +643,17 @@ class MainSceneWithAdvancedCamera {
    * Warp to a planet by name
    */
   public warpToPlanet(planetName: string) {
-    this.advancedCamera.warpToPlanet(planetName);
+    if (this.advancedCamera) {
+      this.advancedCamera.warpToPlanet(planetName);
+    }
   }
 
   /**
    * Follow a planet by name
    */
   public followPlanet(planetName: string) {
+    if (!this.advancedCamera) return;
+    
     const planet = this.planets.find(
       (p) => p.object.name.toLowerCase() === planetName.toLowerCase()
     );
@@ -624,6 +667,8 @@ class MainSceneWithAdvancedCamera {
    * Start autopilot to current target
    */
   public startAutopilot() {
+    if (!this.advancedCamera) return;
+    
     // Show trajectory visualization before starting autopilot
     if (this.trajectoryVisualization && this.advancedCamera.getTarget()) {
       const targetPlanet = this.advancedCamera.getTarget()!;
@@ -646,6 +691,8 @@ class MainSceneWithAdvancedCamera {
    * Cancel autopilot
    */
   public cancelAutopilot() {
+    if (!this.advancedCamera) return;
+    
     this.advancedCamera.cancelAutopilot();
 
     // Clear trajectory visualization
@@ -655,16 +702,34 @@ class MainSceneWithAdvancedCamera {
   }
 
   /**
+   * Update the planets array in the advanced camera
+   * Called after planets are loaded
+   */
+  public updateCameraPlanets() {
+    if (this.advancedCamera && this.planets) {
+      this.advancedCamera.setPlanets(this.planets.map(p => p.object));
+    }
+  }
+
+  /**
    * Clean up resources
    */
   public dispose() {
     if (this.debug) console.log("Disposing scene resources");
 
+    // Cancel animation frame if active
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
     // Remove event listeners
     window.removeEventListener("resize", this.onWindowResize);
 
     // Clean up advanced camera
-    this.advancedCamera.dispose();
+    if (this.advancedCamera) {
+      this.advancedCamera.dispose();
+    }
 
     // Clean up trajectory visualization
     if (this.trajectoryVisualization) {
@@ -675,5 +740,8 @@ class MainSceneWithAdvancedCamera {
     if (this.renderer && this.container.contains(this.renderer.domElement)) {
       this.container.removeChild(this.renderer.domElement);
     }
+    
+    // Set initialization flag to false
+    this.isInitialized = false;
   }
 }

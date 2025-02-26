@@ -105,7 +105,9 @@ export default class AdvancedSpaceCamera {
 
   setPlanets(planets: Planet[]) {
     this.planets = planets;
+    console.log(`Updated camera with ${planets.length} planets`);
   }
+  
 
   /**
    * Initialize the advanced space camera
@@ -123,10 +125,18 @@ export default class AdvancedSpaceCamera {
   ) {
     // Set up camera
     this.camera = camera;
-    this.planets = planets;
-    this.position =
-      initialPosition || new THREE.Vector3(147099221.74991804 + 10000, 0, 0);
+    this.planets = planets || [];
+    
+    // Make sure the position is applied to both the position property and the camera position
+    this.position = initialPosition || new THREE.Vector3(149597890 + 10000, 0, 0);
     this.camera.position.copy(this.position);
+    
+    // Synchronize camera quaternion to initial direction
+    this.rotation = new THREE.Euler(0, 0, 0, "YXZ");
+    this.quaternion = new THREE.Quaternion();
+    this.direction = new THREE.Vector3(0, 0, -1);
+    this.quaternion.setFromEuler(this.rotation);
+    this.camera.quaternion.copy(this.quaternion);
 
     // Setup raycaster for planet selection
     this.raycaster = new THREE.Raycaster();
@@ -965,38 +975,45 @@ export default class AdvancedSpaceCamera {
     if (deltaTime > 1) {
       deltaTime = 0.016; // Default to 60fps
     }
-
+  
     // Update based on current mode
-    switch (this.mode) {
-      case CameraMode.FREE_FLIGHT:
-        this.updateFreeFlight(deltaTime);
-        this.applyGravity(deltaTime);
-        break;
-
-      case CameraMode.AUTOPILOT:
-        this.updateAutopilot(deltaTime);
-        break;
-
-      case CameraMode.ORBIT:
-        this.updateOrbit(deltaTime);
-        break;
-
-      case CameraMode.FOLLOW:
-        this.updateFollow(deltaTime);
-        break;
-
-      case CameraMode.WARPING:
-        this.updateWarp(deltaTime);
-        break;
-    }
-
-    // Check for nearby planets (could be used for proximity warnings or info displays)
-    const closest = this.getClosestPlanet();
-    if (closest && closest.distance < closest.planet.radius * 10) {
-      // We're close to a planet - could trigger proximity warning or auto-select
-      if (!this.currentTarget) {
-        this.setTarget(closest.planet);
+    try {
+      switch (this.mode) {
+        case CameraMode.FREE_FLIGHT:
+          this.updateFreeFlight(deltaTime);
+          this.applyGravity(deltaTime);
+          break;
+  
+        case CameraMode.AUTOPILOT:
+          this.updateAutopilot(deltaTime);
+          break;
+  
+        case CameraMode.ORBIT:
+          this.updateOrbit(deltaTime);
+          break;
+  
+        case CameraMode.FOLLOW:
+          this.updateFollow(deltaTime);
+          break;
+  
+        case CameraMode.WARPING:
+          this.updateWarp(deltaTime);
+          break;
       }
+  
+      // Make sure camera position is synchronized with our internal position
+      this.camera.position.copy(this.position);
+      
+      // Check for nearby planets (could be used for proximity warnings or info displays)
+      const closest = this.getClosestPlanet();
+      if (closest && closest.distance < closest.planet.radius * 10) {
+        // We're close to a planet - could trigger proximity warning or auto-select
+        if (!this.currentTarget) {
+          this.setTarget(closest.planet);
+        }
+      }
+    } catch (error) {
+      console.error("Error in camera update:", error);
     }
   }
 
