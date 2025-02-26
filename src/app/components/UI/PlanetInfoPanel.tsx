@@ -331,7 +331,6 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
   );
 };
 
-// Helper function to get a description for each planet
 function getPlanetDescription(name: string): string {
   const descriptions: Record<string, string> = {
     Sun: "The Sun is the star at the center of the Solar System. It is a nearly perfect sphere of hot plasma, heated to incandescence by nuclear fusion reactions in its core, radiating energy mainly as visible light, ultraviolet, and infrared radiation.",

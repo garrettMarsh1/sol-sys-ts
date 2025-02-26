@@ -360,10 +360,8 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );  
 
-  // Map Panel
   const mapPanel = (
-    <div className="map-panel-content" style={{ height: "310px" }}>
-      {/* Use the actual HolographicMiniMap component here */}
+    <div className="map-panel-content">
       <div 
         className="holographic-map-container"
         style={{ 
@@ -376,12 +374,14 @@ const GameHUD: React.FC<GameHUDProps> = ({
           backgroundColor: "rgba(8, 15, 40, 0.6)"
         }}
       >
-        <HolographicMiniMap 
-          cameraPosition={cameraPosition}
-          planets={planets}
-          currentPlanet={currentPlanet}
-          onSelectPlanet={handleSelectPlanet}
-        />
+        <div className="h-full w-full flex items-center justify-center">
+          <div className="text-center text-cyan-400">
+            <p>System Map</p>
+            <p className="text-xs mt-2">
+              Use the Destination Selector to choose a planet
+            </p>
+          </div>
+        </div>
       </div>
       <div className="mt-2 px-2">
         <div className="hologram-buttons-container">

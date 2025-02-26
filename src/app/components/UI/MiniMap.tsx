@@ -1,5 +1,5 @@
-// Enhanced MiniMap.tsx with better planet rendering and interaction
-import React, { useRef, useEffect, useState } from "react";
+// src/app/components/UI/MiniMap.tsx - Fixed version
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 
 interface HolographicMiniMapProps {
@@ -15,23 +15,32 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   currentPlanet,
   onSelectPlanet,
 }) => {
+  // DOM References
   const containerRef = useRef<HTMLDivElement>(null);
-  const requestRef = useRef<number>();
+  
+  // Three.js objects
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const planetMeshesRef = useRef<Record<string, THREE.Mesh>>({});
-  const orbitLinesRef = useRef<THREE.Line[]>([]);
   const cameraMarkerRef = useRef<THREE.Mesh | null>(null);
-  const isRotatingRef = useRef<boolean>(true); // Auto-rotate by default
+  
+  // Animation frame tracking
+  const requestRef = useRef<number | null>(null);
+  
+  // User interaction state
+  const isRotatingRef = useRef<boolean>(true);
   const isDraggingRef = useRef<boolean>(false);
   const previousMousePositionRef = useRef<{ x: number; y: number } | null>(null);
-
-  // State for expanded view
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  
+  // Tracking objects
+  const planetMeshesRef = useRef<Record<string, THREE.Mesh>>({});
+  const orbitLinesRef = useRef<THREE.Line[]>([]);
+  
+  // Initialization tracking to prevent duplicate setups
+  const isInitializedRef = useRef<boolean>(false);
 
   // Planet colors - using vibrant, game-like colors
-  const planetColors: Record<string, string> = {
+  const planetColors = {
     Sun: "#ffdd00",
     Mercury: "#b5b5b5",
     Venus: "#ffd700",
@@ -44,44 +53,62 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     Pluto: "#964b00",
   };
 
-  // Add keydown event listener for expanded view toggle
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check for Command+M or Control+M
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "m") {
-        e.preventDefault();
-        setIsExpanded((prev) => !prev);
+  // Clean up function to properly dispose Three.js objects
+  const cleanupScene = useCallback(() => {
+    // Cancel animation frame if active
+    if (requestRef.current !== null) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
 
-        // Need to resize renderer when expanding/collapsing
-        if (rendererRef.current && containerRef.current) {
-          setTimeout(() => {
-            if (
-              rendererRef.current &&
-              containerRef.current &&
-              cameraRef.current
-            ) {
-              const width = containerRef.current.clientWidth;
-              const height = containerRef.current.clientHeight;
-              rendererRef.current.setSize(width, height);
-              cameraRef.current.aspect = width / height;
-              cameraRef.current.updateProjectionMatrix();
-            }
-          }, 0);
+    // Clean up planet meshes
+    Object.values(planetMeshesRef.current).forEach(mesh => {
+      if (mesh.geometry) mesh.geometry.dispose();
+      if (mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(m => m.dispose());
+        } else {
+          mesh.material.dispose();
         }
       }
-    };
+    });
+    planetMeshesRef.current = {};
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    // Clean up orbit lines
+    orbitLinesRef.current.forEach(line => {
+      if (line.geometry) line.geometry.dispose();
+      if (line.material) {
+        if (Array.isArray(line.material)) {
+          line.material.forEach(m => m.dispose());
+        } else {
+          line.material.dispose();
+        }
+      }
+    });
+    orbitLinesRef.current = [];
+
+    // Clean up renderer
+    if (rendererRef.current && containerRef.current) {
+      containerRef.current.removeChild(rendererRef.current.domElement);
+      rendererRef.current.dispose();
+      rendererRef.current = null;
+    }
+
+    // Reset scene and camera
+    sceneRef.current = null;
+    cameraRef.current = null;
+    cameraMarkerRef.current = null;
+    
+    // Reset initialization flag
+    isInitializedRef.current = false;
   }, []);
 
-  // Set up and clean up Three.js scene
-  useEffect(() => {
-    if (!containerRef.current) return;
+  // Initialize Three.js scene
+  const initScene = useCallback(() => {
+    if (!containerRef.current || isInitializedRef.current) return;
 
-    console.log("Initializing MiniMap scene");
+    // Set initialization flag to prevent duplicate setup
+    isInitializedRef.current = true;
 
     // Create scene
     const scene = new THREE.Scene();
@@ -91,36 +118,29 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     const ambientLight = new THREE.AmbientLight(0x333333);
     scene.add(ambientLight);
 
-    // Add point light
+    // Add point light at origin (sun position)
     const pointLight = new THREE.PointLight(0xffffff, 1.5);
     pointLight.position.set(0, 0, 0);
     scene.add(pointLight);
 
     // Create camera
-    const camera = new THREE.PerspectiveCamera(
-      60,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      10000
-    );
+    const aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+    const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 10000);
     camera.position.set(0, 300, 500);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    // Create renderer with transparent background
+    // Create renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
     });
-    renderer.setSize(
-      containerRef.current.clientWidth,
-      containerRef.current.clientHeight
-    );
-    renderer.setClearColor(0x000000, 0.0);
+    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setClearColor(0x000000, 0);
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Add a subtle glow to the entire scene - base plane
+    // Add base plane
     const planeGeometry = new THREE.PlaneGeometry(800, 800);
     const planeMaterial = new THREE.MeshBasicMaterial({
       color: 0x0a2463,
@@ -133,14 +153,15 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     plane.position.y = -20;
     scene.add(plane);
 
-    // Add grid lines
+    // Add grid
     const gridHelper = new THREE.GridHelper(800, 20, 0x2e78d4, 0x2e78d4);
     gridHelper.position.y = -19;
-    (gridHelper.material as THREE.Material) = new THREE.LineBasicMaterial({
+    const gridMaterial = new THREE.LineBasicMaterial({
       color: 0x3498db,
       transparent: true,
       opacity: 0.3,
     });
+    gridHelper.material = gridMaterial;
     scene.add(gridHelper);
 
     // Create camera position indicator
@@ -150,158 +171,24 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       transparent: true,
       opacity: 0.7,
     });
-    const cameraMarker = new THREE.Mesh(
-      cameraMarkerGeometry,
-      cameraMarkerMaterial
-    );
+    const cameraMarker = new THREE.Mesh(cameraMarkerGeometry, cameraMarkerMaterial);
     cameraMarker.rotation.x = Math.PI;
     scene.add(cameraMarker);
     cameraMarkerRef.current = cameraMarker;
 
-    // Animation loop
-    const animate = () => {
-      if (!sceneRef.current || !cameraRef.current || !rendererRef.current)
-        return;
+    // Setup the planets
+    updatePlanets();
 
-      if (isRotatingRef.current && !isDraggingRef.current) {
-        sceneRef.current.rotation.y += 0.001;
-      }
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-      requestRef.current = requestAnimationFrame(animate);
-    };
-    requestRef.current = requestAnimationFrame(animate);
+    // Start animation loop
+    animate();
+  }, []);
 
-    // New ref for storing initial click position
-    const initialClickPositionRef = {
-      current: null as { x: number; y: number } | null,
-    };
-
-    // Event handlers for mouse interaction
-    const handleMouseDown = (e: MouseEvent) => {
-      isDraggingRef.current = true;
-      initialClickPositionRef.current = { x: e.clientX, y: e.clientY };
-      previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (
-        isDraggingRef.current &&
-        previousMousePositionRef.current &&
-        sceneRef.current
-      ) {
-        const deltaX = e.clientX - previousMousePositionRef.current.x;
-        sceneRef.current.rotation.y += deltaX * 0.01;
-        previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
-      }
-    };
-
-    const handleMouseUp = () => {
-      isDraggingRef.current = false;
-    };
-
-    const handleMouseLeave = () => {
-      isDraggingRef.current = false;
-    };
-
-    const handleClick = (event: MouseEvent) => {
-      if (initialClickPositionRef.current) {
-        const dx = event.clientX - initialClickPositionRef.current.x;
-        const dy = event.clientY - initialClickPositionRef.current.y;
-        const dragDistance = Math.sqrt(dx * dx + dy * dy);
-        if (dragDistance > 5) {
-          initialClickPositionRef.current = null;
-          return;
-        }
-      }
-      initialClickPositionRef.current = null;
-
-      if (!cameraRef.current || !rendererRef.current || !sceneRef.current)
-        return;
-
-      console.log("MiniMap clicked");
-      if (!containerRef.current) return;
-
-      const rect = containerRef.current.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        -((event.clientY - rect.top) / rect.height) * 2 + 1
-      );
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, cameraRef.current);
-
-      const planetMeshes = Object.values(planetMeshesRef.current);
-      console.log(
-        "Available planets for selection:",
-        Object.keys(planetMeshesRef.current)
-      );
-
-      // Get all intersections
-      const intersects = raycaster.intersectObjects(planetMeshes, true);
-      if (intersects.length > 0) {
-        // If the first intersection is the Sun, try to use the next one
-        let chosenIntersection = intersects[0];
-        if (chosenIntersection.object.name === "Sun" && intersects.length > 1) {
-          chosenIntersection = intersects[1];
-        }
-        console.log("Intersection found:", chosenIntersection);
-        const intersectedObject = chosenIntersection.object as THREE.Mesh;
-        let planetName = Object.keys(planetMeshesRef.current).find((name) => {
-          const mesh = planetMeshesRef.current[name];
-          return (
-            mesh === intersectedObject ||
-            (mesh instanceof THREE.Object3D &&
-              mesh.children.includes(intersectedObject))
-          );
-        });
-        if (!planetName) {
-          let parent = intersectedObject.parent;
-          while (parent && !planetName) {
-            planetName = Object.keys(planetMeshesRef.current).find(
-              (name) => planetMeshesRef.current[name] === parent
-            );
-            parent = parent?.parent || null;
-          }
-        }
-        if (planetName) {
-          console.log("Selected planet:", planetName);
-          const selectedPlanet = planets.find((p) => p.name === planetName);
-          if (selectedPlanet) {
-            console.log("Triggering selection for:", selectedPlanet.name);
-            onSelectPlanet(selectedPlanet);
-          }
-        }
-      } else {
-        console.log("No intersection found");
-      }
-    };
-
-    const currentContainer = containerRef.current;
-    currentContainer.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    currentContainer.addEventListener("mouseleave", handleMouseLeave);
-    currentContainer.addEventListener("click", handleClick);
-
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-      if (rendererRef.current && containerRef.current) {
-        containerRef.current.removeChild(rendererRef.current.domElement);
-      }
-      currentContainer.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      currentContainer.removeEventListener("mouseleave", handleMouseLeave);
-      currentContainer.removeEventListener("click", handleClick);
-    };
-  }, [onSelectPlanet]);
-
-  // Update planet positions and camera marker whenever data changes
-  useEffect(() => {
+  // Update planet positions
+  const updatePlanets = useCallback(() => {
     if (!sceneRef.current) return;
 
-    console.log("Updating MiniMap planets", planets.length);
+    // Scale factor for the minimap
+    const scale = 0.00001;
 
     // Clear old orbit lines
     orbitLinesRef.current.forEach((line) => {
@@ -309,10 +196,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     });
     orbitLinesRef.current = [];
 
-    // Scale factor for the minimap
-    const scale = 0.00001; // Increased scale to make planets more visible
-
-    // Create sun at center
+    // Create sun at center if it doesn't exist
     const sunPlanet = planets.find((p) => p.name === "Sun");
     if (sunPlanet && !planetMeshesRef.current["Sun"]) {
       const sunGeometry = new THREE.SphereGeometry(15, 32, 32);
@@ -343,24 +227,19 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
       // Get planet data
       const distanceFromSun = Math.max(50, (planet.distanceFromSun || 0) * scale);
-      const planetSize = Math.max(5, Math.min(12, ((planet.radius || planet.diameter / 2 || 5) * scale * 100))); // Scale up to make visible
+      const planetSize = Math.max(5, Math.min(12, ((planet.radius || planet.diameter / 2 || 5) * scale * 100)));
 
       // Create orbit path
       const orbitPath = new THREE.EllipseCurve(
-        0,
-        0, // Center x, y
-        distanceFromSun,
-        distanceFromSun, // Radius x, y
-        0,
-        2 * Math.PI, // Start angle, end angle
-        false, // Clockwise
-        0 // Rotation
+        0, 0,           // Center x, y
+        distanceFromSun, distanceFromSun, // Radius x, y
+        0, 2 * Math.PI, // Start angle, end angle
+        false,          // Clockwise
+        0               // Rotation
       );
 
       const orbitPoints = orbitPath.getPoints(100);
-      const orbitGeometry = new THREE.BufferGeometry().setFromPoints(
-        orbitPoints
-      );
+      const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
       const orbitLine = new THREE.Line(
         orbitGeometry,
         new THREE.LineBasicMaterial({
@@ -382,8 +261,8 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         // Create new planet mesh
         const planetGeometry = new THREE.SphereGeometry(planetSize, 16, 16);
         const planetMaterial = new THREE.MeshLambertMaterial({
-          color: planetColors[planet.name] || 0xffffff,
-          emissive: planetColors[planet.name] || 0xffffff,
+          color: planetColors[planet.name as keyof typeof planetColors] || 0xffffff,
+          emissive: planetColors[planet.name as keyof typeof planetColors] || 0xffffff,
           emissiveIntensity: 0.2,
         });
         const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
@@ -405,19 +284,6 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
         }
         planetMeshesRef.current[planet.name] = planetMesh;
 
-        // Add label for each planet
-        const createLabel = (name: string) => {
-          const labelDiv = document.createElement("div");
-          labelDiv.className = "absolute pointer-events-none";
-          labelDiv.style.color = "white";
-          labelDiv.style.fontSize = "10px";
-          labelDiv.style.textShadow = "0 0 3px rgba(0,0,0,0.8)";
-          labelDiv.style.userSelect = "none";
-          labelDiv.style.textAlign = "center";
-          labelDiv.textContent = name;
-          return labelDiv;
-        };
-
         // Add a ring for Saturn
         if (planet.name === "Saturn") {
           const ringGeometry = new THREE.RingGeometry(planetSize * 1.4, planetSize * 2, 32);
@@ -431,22 +297,6 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
           ring.rotation.x = Math.PI / 2;
           planetMesh.add(ring);
         }
-
-        // Add glow effect for highlighted planets
-        if (currentPlanet && planet.name === currentPlanet.name) {
-          const glowGeometry = new THREE.SphereGeometry(
-            planetSize * 1.5,
-            16,
-            16
-          );
-          const glowMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.3,
-          });
-          const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-          planetMesh.add(glow);
-        }
       }
 
       // Position the planet
@@ -456,26 +306,13 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
       // Position planets with a slight vertical offset so they don't all appear on the exact same plane
       planetMesh.position.set(
         Math.cos(angle) * distanceFromSun,
-        planet.orbitalInclination
-          ? Math.sin(planet.orbitalInclination * 0.1) * 10
-          : 0,
+        planet.orbitalInclination ? Math.sin(planet.orbitalInclination * 0.1) * 10 : 0,
         Math.sin(angle) * distanceFromSun
       );
 
       // Highlight current planet
       if (currentPlanet && planet.name === currentPlanet.name) {
         planetMesh.scale.set(1.5, 1.5, 1.5);
-
-        // Add a pulsing effect to the current planet
-        const pulse = () => {
-          if (planetMesh && sceneRef.current) {
-            const scale = 1.5 + Math.sin(Date.now() * 0.005) * 0.2;
-            planetMesh.scale.set(scale, scale, scale);
-          }
-        };
-
-        pulse();
-        requestAnimationFrame(pulse);
       } else {
         planetMesh.scale.set(1, 1, 1);
       }
@@ -490,9 +327,7 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
 
       // Clamp to visible area
       const maxDist = 400;
-      const dist = Math.sqrt(
-        scaledX * scaledX + scaledY * scaledY + scaledZ * scaledZ
-      );
+      const dist = Math.sqrt(scaledX * scaledX + scaledY * scaledY + scaledZ * scaledZ);
 
       if (dist > maxDist) {
         const factor = maxDist / dist;
@@ -512,26 +347,182 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
     }
   }, [planets, currentPlanet, cameraPosition, planetColors]);
 
+  // Animation loop
+  const animate = useCallback(() => {
+    if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
+
+    // Rotate scene if enabled and not dragging
+    if (isRotatingRef.current && !isDraggingRef.current && sceneRef.current) {
+      sceneRef.current.rotation.y += 0.001;
+    }
+
+    // Render scene
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+    
+    // Request next frame
+    requestRef.current = requestAnimationFrame(animate);
+  }, []);
+
+  // Handle window resize
+  const handleResize = useCallback(() => {
+    if (!containerRef.current || !cameraRef.current || !rendererRef.current) return;
+    
+    const width = containerRef.current.clientWidth;
+    const height = containerRef.current.clientHeight;
+    
+    cameraRef.current.aspect = width / height;
+    cameraRef.current.updateProjectionMatrix();
+    
+    rendererRef.current.setSize(width, height);
+  }, []);
+
+  // Initialize scene on mount
+  useEffect(() => {
+    if (containerRef.current && !isInitializedRef.current) {
+      initScene();
+    }
+    
+    // Add resize listener
+    window.addEventListener('resize', handleResize);
+    
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cleanupScene();
+    };
+  }, [initScene, handleResize, cleanupScene]);
+  
+  // Update planets when dependencies change
+  useEffect(() => {
+    if (isInitializedRef.current) {
+      updatePlanets();
+    }
+  }, [planets, currentPlanet, cameraPosition, updatePlanets]);
+
+  // Mouse interaction setup
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const container = containerRef.current;
+    
+    // Mouse event variables
+    let initialClickPosition = { x: 0, y: 0 };
+    
+    const handleMouseDown = (e: MouseEvent) => {
+      isDraggingRef.current = true;
+      initialClickPosition = { x: e.clientX, y: e.clientY };
+      previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDraggingRef.current && previousMousePositionRef.current && sceneRef.current) {
+        const deltaX = e.clientX - previousMousePositionRef.current.x;
+        sceneRef.current.rotation.y += deltaX * 0.01;
+        previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
+      }
+    };
+
+    const handleMouseUp = () => {
+      isDraggingRef.current = false;
+    };
+
+    const handleMouseLeave = () => {
+      isDraggingRef.current = false;
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      // Check if this was a drag or a click
+      const dx = event.clientX - initialClickPosition.x;
+      const dy = event.clientY - initialClickPosition.y;
+      const dragDistance = Math.sqrt(dx * dx + dy * dy);
+      
+      // If dragged too much, don't treat as click
+      if (dragDistance > 5) return;
+      
+      if (!cameraRef.current || !rendererRef.current || !sceneRef.current) return;
+      
+      // Get mouse position in normalized device coordinates
+      const rect = container.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      
+      // Raycasting for planet selection
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, cameraRef.current);
+      
+      const planetMeshes = Object.values(planetMeshesRef.current);
+      
+      // Check for intersections
+      const intersects = raycaster.intersectObjects(planetMeshes, true);
+      if (intersects.length > 0) {
+        // Try to find the planet that was clicked
+        const intersectedObject = intersects[0].object;
+        let planetName = Object.keys(planetMeshesRef.current).find(name => 
+          planetMeshesRef.current[name] === intersectedObject ||
+          planetMeshesRef.current[name].children.includes(intersectedObject)
+        );
+        
+        // If not found directly, check parent objects
+        if (!planetName) {
+          let parent = intersectedObject.parent;
+          while (parent && !planetName) {
+            planetName = Object.keys(planetMeshesRef.current).find(
+              name => planetMeshesRef.current[name] === parent
+            );
+            parent = parent?.parent || null;
+          }
+        }
+        
+        // If planet found, select it
+        if (planetName) {
+          const selectedPlanet = planets.find(p => p.name === planetName);
+          if (selectedPlanet) {
+            onSelectPlanet(selectedPlanet);
+          }
+        }
+      }
+    };
+
+    // Add event listeners
+    container.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    container.addEventListener("mouseleave", handleMouseLeave);
+    container.addEventListener("click", handleClick);
+
+    // Remove event listeners on cleanup
+    return () => {
+      container.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      container.removeEventListener("mouseleave", handleMouseLeave);
+      container.removeEventListener("click", handleClick);
+    };
+  }, [planets, onSelectPlanet]);
+
+  // Toggle rotation handler
+  const toggleRotation = () => {
+    isRotatingRef.current = !isRotatingRef.current;
+  };
+
   return (
-    <div
-      className="flex-1 h-full relative"
-      style={{ 
-        overflow: "hidden", 
-        borderRadius: "4px"
-      }}
+    <div 
+      className="flex-1 h-full relative" 
+      style={{ overflow: "hidden", borderRadius: "4px" }}
     >
-      <div 
-        ref={containerRef}
-        className="w-full h-full"
-      />
+      {/* Container for THREE.js renderer */}
+      <div ref={containerRef} className="w-full h-full" />
+      
+      {/* UI Controls */}
       <div className="absolute bottom-2 left-2 text-xs text-cyan-400">
         Drag to rotate • Click to select
       </div>
+      
       <div className="absolute top-2 right-2 flex gap-2">
         <button
-          onClick={() => {
-            isRotatingRef.current = !isRotatingRef.current;
-          }}
+          onClick={toggleRotation}
           className="game-panel-button"
           title={isRotatingRef.current ? "Pause rotation" : "Resume rotation"}
         >
@@ -542,4 +533,4 @@ const HolographicMiniMap: React.FC<HolographicMiniMapProps> = ({
   );
 };
 
-export default HolographicMiniMap;
+export default React.memo(HolographicMiniMap);

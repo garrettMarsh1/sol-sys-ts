@@ -1,4 +1,4 @@
-"use client"; // This marks the component as client-side only
+"use client"; 
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
@@ -7,7 +7,6 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
-// Import planet classes
 import Sun from "./planets/Sun";
 import Mercury from "./planets/Mercury";
 import Venus from "./planets/Venus";
@@ -20,7 +19,6 @@ import Neptune from "./planets/Neptune";
 import Pluto from "./planets/Pluto";
 import Stars from "./stars/stars";
 
-// Import camera and UI components
 import AdvancedSpaceCamera, { CameraMode } from "./Camera/AdvancedSpaceCamera";
 import CameraControlsUI from "./UI/CameraControlsUI";
 import GameHUD from "./UI/GameHud";
@@ -30,9 +28,7 @@ import TrajectoryVisualization from "./Camera/TrajectoryVisualization";
 const MainScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<MainSceneWithAdvancedCamera | null>(null);
-  const isInitializedRef = useRef<boolean>(false); // Use a ref to track initialization
-
-  // State for UI components
+  const isInitializedRef = useRef<boolean>(false); 
   const [currentPlanet, setCurrentPlanet] = useState<Planet | null>(null);
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 0 });
   const [cameraSpeed, setCameraSpeed] = useState(0);
@@ -44,13 +40,11 @@ const MainScene: React.FC = () => {
   const [autopilotProgress, setAutopilotProgress] = useState(0);
   const [warpProgress, setWarpProgress] = useState(0);
 
-  // Setup main scene with advanced camera
   useEffect(() => {
     if (containerRef.current && !isInitializedRef.current) {
       try {
         console.log("Initializing MainSceneWithAdvancedCamera");
         
-        // Mark as initialized to prevent double initialization
         isInitializedRef.current = true;
         
         sceneRef.current = new MainSceneWithAdvancedCamera(
@@ -69,7 +63,7 @@ const MainScene: React.FC = () => {
         console.log("MainSceneWithAdvancedCamera initialized successfully");
       } catch (error) {
         console.error("Error initializing scene:", error);
-        isInitializedRef.current = false; // Reset if initialization fails
+        isInitializedRef.current = false; 
       }
     }
 
@@ -81,9 +75,8 @@ const MainScene: React.FC = () => {
         isInitializedRef.current = false;
       }
     };
-  }, []); // Empty dependency array to run only once
+  }, []); 
 
-  // Handle time scale changes
   const handleSetTimeScale = (scale: number) => {
     setTimeScale(scale);
     if (sceneRef.current) {
@@ -91,14 +84,12 @@ const MainScene: React.FC = () => {
     }
   };
 
-  // Camera mode handling
   const handleSetCameraMode = (mode: CameraMode) => {
     if (sceneRef.current) {
       sceneRef.current.setCameraMode(mode);
     }
   };
 
-  // Planet interaction methods
   const handleWarpToPlanet = (planetName: string) => {
     if (sceneRef.current) {
       sceneRef.current.warpToPlanet(planetName);
@@ -111,7 +102,6 @@ const MainScene: React.FC = () => {
     }
   };
 
-  // Autopilot control
   const handleStartAutopilot = () => {
     if (sceneRef.current) {
       sceneRef.current.startAutopilot();
@@ -183,11 +173,9 @@ class MainSceneWithAdvancedCamera {
   private lastFrameTime: number = 0;
   private isInitialized: boolean = false;
   private trajectoryVisualization: TrajectoryVisualization | null = null;
-  private animationFrameId: number | null = null; // To track the animation frame
-  // Debug flag
+  private animationFrameId: number | null = null; 
   private debug: boolean = true;
 
-  // Callbacks for UI updates
   private callbacks: {
     onPlanetSelect: (planet: Planet | null) => void;
     onPositionUpdate: (position: { x: number; y: number; z: number }) => void;
@@ -213,17 +201,13 @@ class MainSceneWithAdvancedCamera {
     this.container = container;
     this.callbacks = callbacks;
 
-    // Debug log
     if (this.debug)
       console.log("MainSceneWithAdvancedCamera constructor called");
 
-    // Initialize immediately
     this.init();
   }
 
-  /**
-   * Initialize the scene, camera, planets, and rendering pipeline
-   */
+
   private init() {
     try {
       if (this.debug) console.log("Starting scene initialization");
@@ -237,41 +221,32 @@ class MainSceneWithAdvancedCamera {
       this.setupPostProcessing();
       this.setupTrajectoryVisualization();
 
-      // Send initial planets data to React state
       this.callbacks.onPlanetsLoaded(this.planets.map((p) => p.object));
 
-      // Start animation loop
       this.lastFrameTime = performance.now();
 
-      // Add a simple test render to ensure renderer is working
       this.renderer.render(this.scene, this.camera);
 
       if (this.debug) console.log("First render completed");
 
-      // Mark as initialized before starting animation loop
       this.isInitialized = true;
       
-      // Start animation loop
       this.animate();
 
-      // Handle window resize
       window.addEventListener("resize", this.onWindowResize);
 
       if (this.debug) console.log("Scene initialization complete");
     } catch (error) {
       console.error("Error in scene initialization:", error);
-      this.isInitialized = false; // Ensure we don't try to animate if initialization failed
+      this.isInitialized = false; 
     }
   }
 
-  /**
-   * Set up the three.js scene
-   */
+
   private setupScene() {
     if (this.debug) console.log("Setting up scene");
     this.scene = new THREE.Scene();
-    // Add background color to help with debugging
-    this.scene.background = new THREE.Color(0x020924);
+    this.scene.background = new THREE.Color(0x000000);
   }
 
   /**
