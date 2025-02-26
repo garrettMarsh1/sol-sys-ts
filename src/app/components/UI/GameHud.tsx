@@ -6,7 +6,10 @@ import HolographicMiniMap from "./MiniMap";
 import TimeControls from "./TimeControls";
 import CoordinatesDisplay from "./CoordinatesDisplay";
 import CockpitFrame from "./CockpitFrame";
+import CockpitInterface from "./CockpitInterface";
 import "./GameUI.css";
+import "./HolographicUI.css";
+import "./HolographicButtons.css";
 
 interface GameHUDProps {
   currentPlanet: any | null;
@@ -34,157 +37,31 @@ const GameHUD: React.FC<GameHUDProps> = ({
   planets,
   cameraMode,
 }) => {
+  // States for panel visibility
   const [showPlanetInfo, setShowPlanetInfo] = useState(false);
+  const [showNavigation, setShowNavigation] = useState(false);
+  const [showCoordinates, setShowCoordinates] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [showTime, setShowTime] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [showTargetingReticle, setShowTargetingReticle] = useState(false);
 
+  // Show planet info panel when selecting a planet
   useEffect(() => {
     if (currentPlanet) {
       setShowPlanetInfo(true);
-      setShowTargetingReticle(true);
-
-      const timer = setTimeout(() => {
-        setShowTargetingReticle(false);
-      }, 3000);
-
-      return () => clearTimeout(timer);
     }
   }, [currentPlanet]);
 
+  // Speed calculation
   const velocityMagnitude = Math.sqrt(
     cameraVelocity.x * cameraVelocity.x +
-      cameraVelocity.y * cameraVelocity.y +
-      cameraVelocity.z * cameraVelocity.z
+    cameraVelocity.y * cameraVelocity.y +
+    cameraVelocity.z * cameraVelocity.z
   );
 
-  return (
-    <div className="global-game-ui">
-      {/* Cockpit Frame - New component */}
-      <CockpitFrame cameraVelocity={cameraVelocity} />
-
-      {/* Title Bar - Reduced to minimal display */}
-      <div className="absolute top-0 left-0 right-0 h-12 flex justify-center items-center px-4 z-50 pointer-events-none">
-        <div className="text-xl font-bold text-cyan-300 flex items-center">
-          <span className="text-sm mr-2 text-cyan-400">ALPHA v1.0</span>
-          Solar System Explorer
-        </div>
-      </div>
-
-      {/* Help Dialog */}
-      {showHelp && (
-        <div className="absolute inset-0 bg-black bg-opacity-90 text-white p-8 overflow-auto z-50">
-          <div className="max-w-4xl mx-auto game-panel p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-cyan-300">
-                Navigation Controls
-              </h2>
-              <button
-                onClick={() => setShowHelp(false)}
-                className="game-button"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="game-panel p-4">
-                <h3 className="text-xl font-bold mb-3 text-cyan-300">
-                  Ship Movement
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="data-group">
-                    <div className="data-label">Forward/Backward</div>
-                    <div className="data-value">W / S</div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Strafe Left/Right</div>
-                    <div className="data-value">A / D</div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Ascend/Descend</div>
-                    <div className="data-value">Q / E</div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Roll Left/Right</div>
-                    <div className="data-value">Z / C</div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Boost Speed</div>
-                    <div className="data-value">SHIFT + W</div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Look Around</div>
-                    <div className="data-value">MOUSE DRAG</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="game-panel p-4">
-                <h3 className="text-xl font-bold mb-3 text-cyan-300">
-                  Interface Controls
-                </h3>
-                <div className="space-y-4">
-                  <div className="data-group">
-                    <div className="data-label">Select Planet</div>
-                    <div className="data-value">
-                      Click on planet or use minimap
-                    </div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Camera Modes</div>
-                    <div className="data-value">
-                      Free Flight / Follow / Orbit
-                    </div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Time Control</div>
-                    <div className="data-value">Adjust simulation speed</div>
-                  </div>
-                  <div className="data-group">
-                    <div className="data-label">Exit Following Mode</div>
-                    <div className="data-value">ESC key</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="game-panel p-4 mb-6">
-              <h3 className="text-xl font-bold mb-3 text-cyan-300">
-                Exploration Tips
-              </h3>
-              <ul className="space-y-2">
-                <li>
-                  <span className="status-indicator status-active"></span> Use
-                  the minimap to locate planets and navigate the solar system
-                </li>
-                <li>
-                  <span className="status-indicator status-active"></span>{" "}
-                  Adjust time scale to observe planetary motion more clearly
-                </li>
-                <li>
-                  <span className="status-indicator status-active"></span> Try
-                  different camera modes when observing planets
-                </li>
-                <li>
-                  <span className="status-indicator status-active"></span> The
-                  Follow mode automatically tracks a planet's movement
-                </li>
-                <li>
-                  <span className="status-indicator status-active"></span> Use
-                  Orbit mode to circle around planets
-                </li>
-                <li>
-                  <span className="status-indicator status-warning"></span>{" "}
-                  Distances in space are vast - use Warp to quickly reach
-                  planets
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Coordinates Display - Repositioned for cockpit layout */}
+  // Custom panel components with close buttons
+  const renderCoordinatesPanel = () => (
+    <div className="panel-content coordinates-panel">
       <CoordinatesDisplay
         position={cameraPosition}
         velocity={velocityMagnitude}
@@ -192,43 +69,48 @@ const GameHUD: React.FC<GameHUDProps> = ({
           currentPlanet
             ? Math.sqrt(
                 Math.pow(cameraPosition.x - currentPlanet.position.x, 2) +
-                  Math.pow(cameraPosition.y - currentPlanet.position.y, 2) +
-                  Math.pow(cameraPosition.z - currentPlanet.position.z, 2)
+                Math.pow(cameraPosition.y - currentPlanet.position.y, 2) +
+                Math.pow(cameraPosition.z - currentPlanet.position.z, 2)
               )
             : null
         }
         currentPlanet={currentPlanet}
       />
+    </div>
+  );
 
-      {/* Navigation Controls - Repositioned for cockpit layout */}
+  const renderNavigationPanel = () => (
+    <div className="panel-content navigation-panel">
       <NavigationControls
         onToggleCameraMode={onToggleCameraMode}
         cameraMode={cameraMode}
       />
+    </div>
+  );
 
-      {/* Help Button - Floating in bottom center */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-        <button
-          onClick={() => setShowHelp(!showHelp)}
-          className="game-button"
-        >
-          {showHelp ? "Hide Help" : "Help"}
-        </button>
-      </div>
-
-      {/* Holographic Mini Map - Kept in top right */}
+  const renderMapPanel = () => (
+    <div className="panel-content map-panel">
       <HolographicMiniMap
         cameraPosition={cameraPosition}
         planets={planets}
         currentPlanet={currentPlanet}
         onSelectPlanet={(planet) => onWarpToPlanet(planet.name)}
       />
+    </div>
+  );
 
-      {/* Time Controls - Kept in bottom right */}
-      <TimeControls timeScale={timeScale} onSetTimeScale={onSetTimeScale} />
+  const renderTimePanel = () => (
+    <div className="panel-content time-panel">
+      <TimeControls 
+        timeScale={timeScale} 
+        onSetTimeScale={onSetTimeScale} 
+      />
+    </div>
+  );
 
-      {/* Planet Info Panel - Shown in center when a planet is selected */}
-      {currentPlanet && showPlanetInfo && (
+  const renderPlanetInfoPanel = () => (
+    <div className="panel-content planet-info-panel">
+      {currentPlanet && (
         <PlanetInfoPanel
           planet={currentPlanet}
           onClose={() => setShowPlanetInfo(false)}
@@ -237,6 +119,180 @@ const GameHUD: React.FC<GameHUDProps> = ({
         />
       )}
     </div>
+  );
+
+  const renderHelpPanel = () => (
+    <div className="panel-content help-panel">
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-cyan-300">Navigation Controls</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="game-panel-dark p-4">
+            <h3 className="text-xl font-bold mb-3 text-cyan-300">Ship Movement</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-cyan-400">Forward/Backward</div>
+                <div className="text-white">W / S</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Strafe Left/Right</div>
+                <div className="text-white">A / D</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Ascend/Descend</div>
+                <div className="text-white">Q / E</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Roll Left/Right</div>
+                <div className="text-white">Z / C</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Boost Speed</div>
+                <div className="text-white">SHIFT + W</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Look Around</div>
+                <div className="text-white">MOUSE DRAG</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="game-panel-dark p-4">
+            <h3 className="text-xl font-bold mb-3 text-cyan-300">Interface Controls</h3>
+            <div className="space-y-4">
+              <div>
+                <div className="text-cyan-400">Select Planet</div>
+                <div className="text-white">Click on planet or use minimap</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Camera Modes</div>
+                <div className="text-white">Free Flight / Follow / Orbit</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Time Control</div>
+                <div className="text-white">Adjust simulation speed</div>
+              </div>
+              <div>
+                <div className="text-cyan-400">Exit Following Mode</div>
+                <div className="text-white">ESC key</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <CockpitInterface
+      currentPlanet={currentPlanet}
+      cameraPosition={cameraPosition}
+      cameraVelocity={cameraVelocity}
+    >
+      {/* Status bar at top */}
+      <div className="status-bar">
+        <div className={`status-indicator ${cameraMode === "fps" ? "status-active" : ""}`}>
+          <div className="status-indicator-dot"></div>
+          <div className="status-indicator-text">Shields: 100%</div>
+        </div>
+        <div className={`status-indicator ${velocityMagnitude > 50 ? "status-warning" : "status-active"}`}>
+          <div className="status-indicator-dot"></div>
+          <div className="status-indicator-text">Fuel: 98%</div>
+        </div>
+        <div className="status-indicator status-active">
+          <div className="status-indicator-dot"></div>
+          <div className="status-indicator-text">Life Support: NOMINAL</div>
+        </div>
+      </div>
+
+      {/* Add cockpit frame with ship controls */}
+      <CockpitFrame cameraVelocity={cameraVelocity} />
+
+      {/* Help button - floating in bottom center */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="game-button"
+        >
+          {showHelp ? "Close Help" : "Help"}
+        </button>
+      </div>
+
+      {/* Panel containers */}
+      {showCoordinates && (
+        <div className="panel-container panel-left panel-coordinates">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>Navigation System</h3>
+              <button className="panel-close-button" onClick={() => setShowCoordinates(false)}>×</button>
+            </div>
+            {renderCoordinatesPanel()}
+          </div>
+        </div>
+      )}
+
+      {showNavigation && (
+        <div className="panel-container panel-left panel-navigation panel-offset-1">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>Flight Control</h3>
+              <button className="panel-close-button" onClick={() => setShowNavigation(false)}>×</button>
+            </div>
+            {renderNavigationPanel()}
+          </div>
+        </div>
+      )}
+
+      {showMap && (
+        <div className="panel-container panel-right panel-map">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>System Map</h3>
+              <button className="panel-close-button" onClick={() => setShowMap(false)}>×</button>
+            </div>
+            {renderMapPanel()}
+          </div>
+        </div>
+      )}
+
+      {showTime && (
+        <div className="panel-container panel-right panel-time panel-offset-1">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>Temporal Control</h3>
+              <button className="panel-close-button" onClick={() => setShowTime(false)}>×</button>
+            </div>
+            {renderTimePanel()}
+          </div>
+        </div>
+      )}
+
+      {showPlanetInfo && currentPlanet && (
+        <div className="panel-container panel-center planet-info-container">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>{currentPlanet.name} Scanner</h3>
+              <button className="panel-close-button" onClick={() => setShowPlanetInfo(false)}>×</button>
+            </div>
+            {renderPlanetInfoPanel()}
+          </div>
+        </div>
+      )}
+
+      {showHelp && (
+        <div className="panel-container panel-center help-container">
+          <div className="hologram-effect">
+            <div className="panel-header">
+              <h3>Control Guide</h3>
+              <button className="panel-close-button" onClick={() => setShowHelp(false)}>×</button>
+            </div>
+            {renderHelpPanel()}
+          </div>
+        </div>
+      )}
+    </CockpitInterface>
   );
 };
 

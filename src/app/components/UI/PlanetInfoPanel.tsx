@@ -1,5 +1,5 @@
 // src/app/components/UI/PlanetInfoPanel.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface PlanetInfoPanelProps {
   planet: any;
@@ -18,6 +18,11 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     "overview" | "physical" | "orbital"
   >("overview");
 
+  // Reset to overview tab when a new planet is selected
+  useEffect(() => {
+    setActiveTab("overview");
+  }, [planet?.name]);
+
   const formatNumber = (num: number | undefined): string => {
     if (num === undefined || num === null || isNaN(num)) {
       return "Unknown";
@@ -33,60 +38,36 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
   };
 
   return (
-    <div
-      className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                    planet-info-panel game-panel
-                    max-w-lg w-full max-h-[80vh] overflow-auto pointer-events-auto"
-    >
-      <div className="game-panel-header">
-        <h2 className="game-panel-title text-xl">{planet.name} Scanner</h2>
-        <button onClick={onClose} className="game-panel-button">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
-
-      <div className="game-tabs">
+    <div className="planet-info-content">
+      <div className="hologram-tabs">
         <button
-          className={`game-tab ${
-            activeTab === "overview" ? "game-tab-active" : ""
+          className={`hologram-tab ${
+            activeTab === "overview" ? "hologram-tab-active" : ""
           }`}
           onClick={() => setActiveTab("overview")}
         >
           Overview
         </button>
         <button
-          className={`game-tab ${
-            activeTab === "physical" ? "game-tab-active" : ""
+          className={`hologram-tab ${
+            activeTab === "physical" ? "hologram-tab-active" : ""
           }`}
           onClick={() => setActiveTab("physical")}
         >
-          Physical Data
+          Physical
         </button>
         <button
-          className={`game-tab ${
-            activeTab === "orbital" ? "game-tab-active" : ""
+          className={`hologram-tab ${
+            activeTab === "orbital" ? "hologram-tab-active" : ""
           }`}
           onClick={() => setActiveTab("orbital")}
         >
-          Orbital Data
+          Orbital
         </button>
       </div>
 
       {activeTab === "overview" && (
-        <div className="game-panel-content">
+        <div className="tab-content overview-tab p-4">
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div className="flex justify-center items-center">
               <div
@@ -133,10 +114,10 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                 <div className="data-label">Key Parameters</div>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1">
                   <div className="text-cyan-400">Diameter:</div>
-                  <div>{formatNumber(planet.diameter)} km</div>
+                  <div>{formatNumber(planet.diameter)}</div>
 
                   <div className="text-cyan-400">Orbital Distance:</div>
-                  <div>{formatNumber(planet.distanceFromSun)} km</div>
+                  <div>{formatNumber(planet.distanceFromSun)}</div>
 
                   <div className="text-cyan-400">Rotation Period:</div>
                   <div>{planet.rotationPeriod} days</div>
@@ -148,29 +129,31 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
             </div>
           </div>
 
-          <div className="game-panel-dark p-3 mb-6 rounded">
+          <div className="hologram-panel-dark p-3 mb-6 rounded">
             <div className="data-label mb-1">Planetary Analysis</div>
             <p className="text-sm leading-relaxed">
               {getPlanetDescription(planet.name)}
             </p>
           </div>
 
-          <div className="flex space-x-4 mb-2">
+          <div className="hologram-buttons-container">
             <button
               onClick={onWarp}
-              className="game-button game-button-primary flex-1 py-3"
+              className="hologram-button hologram-button-primary"
             >
-              Warp to {planet.name}
+              <span className="hologram-button-icon">🚀</span>
+              <span className="hologram-button-text">Warp to {planet.name}</span>
             </button>
             <button
               onClick={onFollow}
-              className="game-button game-button-success flex-1 py-3"
+              className="hologram-button hologram-button-success"
             >
-              Follow Orbit
+              <span className="hologram-button-icon">🔄</span>
+              <span className="hologram-button-text">Follow Orbit</span>
             </button>
           </div>
 
-          <div className="text-xs text-center text-cyan-300">
+          <div className="text-xs text-center text-cyan-300 mt-3">
             Travel Time Estimate:{" "}
             {formatNumber(Math.sqrt(planet.distanceFromSun) * 0.01)} minutes at
             standard warp
@@ -179,98 +162,122 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
       )}
 
       {activeTab === "physical" && (
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-          <div className="text-gray-400">Mass:</div>
-          <div>{formatNumber(planet.mass)} kg</div>
+        <div className="tab-content physical-tab p-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div className="text-cyan-400">Mass:</div>
+            <div>{formatNumber(planet.mass)} kg</div>
 
-          <div className="text-gray-400">Diameter:</div>
-          <div>{formatNumber(planet.diameter)} km</div>
+            <div className="text-cyan-400">Diameter:</div>
+            <div>{formatNumber(planet.diameter)}</div>
 
-          <div className="text-gray-400">Density:</div>
-          <div>{planet.density} kg/m³</div>
+            <div className="text-cyan-400">Density:</div>
+            <div>{planet.density} kg/m³</div>
 
-          <div className="text-gray-400">Surface Gravity:</div>
-          <div>{planet.gravity} m/s²</div>
+            <div className="text-cyan-400">Surface Gravity:</div>
+            <div>{planet.gravity} m/s²</div>
 
-          <div className="text-gray-400">Escape Velocity:</div>
-          <div>{planet.escapeVelocity} km/s</div>
+            <div className="text-cyan-400">Escape Velocity:</div>
+            <div>{planet.escapeVelocity} km/s</div>
 
-          <div className="text-gray-400">Surface Temperature:</div>
-          <div>{planet.meanTemperature} K</div>
+            <div className="text-cyan-400">Surface Temperature:</div>
+            <div>{planet.meanTemperature} K</div>
 
-          {planet.surfacePressure > 0 && (
-            <>
-              <div className="text-gray-400">Surface Pressure:</div>
-              <div>{planet.surfacePressure} Pa</div>
-            </>
-          )}
+            {planet.surfacePressure > 0 && (
+              <>
+                <div className="text-cyan-400">Surface Pressure:</div>
+                <div>{planet.surfacePressure} Pa</div>
+              </>
+            )}
 
-          <div className="text-gray-400">Number of Moons:</div>
-          <div>{planet.numberOfMoons}</div>
+            <div className="text-cyan-400">Number of Moons:</div>
+            <div>{planet.numberOfMoons}</div>
 
-          <div className="text-gray-400">Ring System:</div>
-          <div>{planet.hasRingSystem ? "Yes" : "No"}</div>
+            <div className="text-cyan-400">Ring System:</div>
+            <div>{planet.hasRingSystem ? "Yes" : "No"}</div>
 
-          <div className="text-gray-400">Global Magnetic Field:</div>
-          <div>{planet.hasGlobalMagneticField ? "Yes" : "No"}</div>
+            <div className="text-cyan-400">Global Magnetic Field:</div>
+            <div>{planet.hasGlobalMagneticField ? "Yes" : "No"}</div>
 
-          {planet.composition && (
-            <>
-              <div className="text-gray-400 col-span-2 mt-2 mb-1">
-                Composition:
-              </div>
-              <div className="col-span-2">
-                <div className="bg-gray-800 p-2 rounded">
-                  {Object.entries(planet.composition).map(
-                    ([element, percentage]: [string, any]) => (
-                      <div key={element} className="flex justify-between mb-1">
-                        <span>{element}</span>
-                        <span>
-                          {typeof percentage === "number"
-                            ? `${percentage.toFixed(1)}%`
-                            : percentage}
-                        </span>
-                      </div>
-                    )
-                  )}
+            {planet.composition && (
+              <>
+                <div className="text-cyan-400 col-span-2 mt-4 mb-2">
+                  Composition:
                 </div>
-              </div>
-            </>
-          )}
+                <div className="col-span-2">
+                  <div className="hologram-panel-dark p-2 rounded">
+                    {Object.entries(planet.composition).map(
+                      ([element, percentage]: [string, any]) => (
+                        <div key={element} className="flex justify-between mb-1">
+                          <span>{element}</span>
+                          <span>
+                            {typeof percentage === "number"
+                              ? `${percentage.toFixed(1)}%`
+                              : percentage}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="hologram-buttons-container mt-4">
+            <button
+              onClick={onWarp}
+              className="hologram-button hologram-button-primary"
+            >
+              <span className="hologram-button-icon">🚀</span>
+              <span className="hologram-button-text">Warp to {planet.name}</span>
+            </button>
+          </div>
         </div>
       )}
 
       {activeTab === "orbital" && (
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-          <div className="text-gray-400">Distance from Sun:</div>
-          <div>{formatNumber(planet.distanceFromSun)} km</div>
+        <div className="tab-content orbital-tab p-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <div className="text-cyan-400">Distance from Sun:</div>
+            <div>{formatNumber(planet.distanceFromSun)}</div>
 
-          <div className="text-gray-400">Perihelion:</div>
-          <div>{formatNumber(planet.perihelion)} km</div>
+            <div className="text-cyan-400">Perihelion:</div>
+            <div>{formatNumber(planet.perihelion)}</div>
 
-          <div className="text-gray-400">Aphelion:</div>
-          <div>{formatNumber(planet.aphelion)} km</div>
+            <div className="text-cyan-400">Aphelion:</div>
+            <div>{formatNumber(planet.aphelion)}</div>
 
-          <div className="text-gray-400">Orbital Period:</div>
-          <div>{planet.orbitalPeriod} days</div>
+            <div className="text-cyan-400">Orbital Period:</div>
+            <div>{planet.orbitalPeriod} days</div>
 
-          <div className="text-gray-400">Orbital Velocity:</div>
-          <div>{planet.orbitalVelocity} km/s</div>
+            <div className="text-cyan-400">Orbital Velocity:</div>
+            <div>{planet.orbitalVelocity} km/s</div>
 
-          <div className="text-gray-400">Orbital Inclination:</div>
-          <div>{planet.orbitalInclination}°</div>
+            <div className="text-cyan-400">Orbital Inclination:</div>
+            <div>{planet.orbitalInclination}°</div>
 
-          <div className="text-gray-400">Eccentricity:</div>
-          <div>{planet.orbitalEccentricity}</div>
+            <div className="text-cyan-400">Eccentricity:</div>
+            <div>{planet.orbitalEccentricity}</div>
 
-          <div className="text-gray-400">Axial Tilt:</div>
-          <div>{planet.obliquityToOrbit}°</div>
+            <div className="text-cyan-400">Axial Tilt:</div>
+            <div>{planet.obliquityToOrbit}°</div>
 
-          <div className="text-gray-400">Rotation Period:</div>
-          <div>{planet.rotationPeriod} days</div>
+            <div className="text-cyan-400">Rotation Period:</div>
+            <div>{planet.rotationPeriod} days</div>
 
-          <div className="text-gray-400">Day Length:</div>
-          <div>{planet.lengthOfDay} hours</div>
+            <div className="text-cyan-400">Day Length:</div>
+            <div>{planet.lengthOfDay} hours</div>
+          </div>
+          
+          <div className="hologram-buttons-container mt-4">
+            <button
+              onClick={onFollow}
+              className="hologram-button hologram-button-success"
+            >
+              <span className="hologram-button-icon">🔄</span>
+              <span className="hologram-button-text">Track Orbit</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

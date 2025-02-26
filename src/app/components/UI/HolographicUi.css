@@ -1,0 +1,531 @@
+/* src/app/components/UI/HolographicUI.css */
+
+/* Cockpit interface container */
+.cockpit-interface {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  /* Allow pointer events on children but not the container */
+  .cockpit-interface * {
+    pointer-events: auto;
+  }
+  
+  /* Cockpit frame and controls */
+  .cockpit-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    pointer-events: none;
+  }
+  
+  /* Cockpit side controls (left and right) */
+  .cockpit-controls-left,
+  .cockpit-controls-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    pointer-events: none;
+  }
+  
+  .cockpit-controls-left {
+    left: 15px;
+  }
+  
+  .cockpit-controls-right {
+    right: 15px;
+  }
+  
+  /* Cockpit button styling */
+  .cockpit-button {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(8, 15, 40, 0.7);
+    border: 2px solid rgba(64, 153, 255, 0.5);
+    color: #60dfff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(64, 153, 255, 0.3);
+  }
+  
+  .cockpit-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      rgba(64, 153, 255, 0) 0%, 
+      rgba(64, 153, 255, 0.8) 50%, 
+      rgba(64, 153, 255, 0) 100%);
+    animation: scan-line 2s linear infinite;
+  }
+  
+  .cockpit-button-icon {
+    font-size: 24px;
+    margin-bottom: 5px;
+  }
+  
+  .cockpit-button-label {
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .cockpit-button:hover {
+    background: rgba(14, 30, 70, 0.8);
+    border-color: rgba(96, 223, 255, 0.8);
+    box-shadow: 0 0 20px rgba(96, 223, 255, 0.5);
+    transform: scale(1.05);
+  }
+  
+  .cockpit-button-active {
+    background: rgba(25, 52, 120, 0.8);
+    border-color: rgba(96, 223, 255, 1);
+    box-shadow: 0 0 25px rgba(96, 223, 255, 0.7);
+  }
+  
+  /* Panel container positioning and styling */
+  .panel-container {
+    position: fixed;
+    z-index: 20;
+    overflow: hidden;
+    pointer-events: all;
+  }
+  
+  .panel-left {
+    top: 120px;
+    left: 30px;
+    width: 320px;
+    max-height: calc(100vh - 240px);
+  }
+  
+  .panel-right {
+    top: 120px;
+    right: 30px;
+    width: 320px;
+    max-height: calc(100vh - 240px);
+  }
+  
+  .panel-bottom {
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    max-height: 300px;
+  }
+  
+  .panel-center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    max-height: 70vh;
+  }
+  
+  /* Panel offset positions for staggering */
+  .panel-offset-1 {
+    top: 170px;
+  }
+  
+  /* Holographic effect for panels */
+  .hologram-effect {
+    background: rgba(8, 15, 40, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(64, 153, 255, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(64, 153, 255, 0.3),
+      inset 0 0 15px rgba(64, 153, 255, 0.2);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .hologram-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      linear-gradient(90deg, 
+        rgba(64, 153, 255, 0.1) 0px, 
+        rgba(64, 153, 255, 0) 1px) 0 0 / 20px 20px,
+      linear-gradient(0deg, 
+        rgba(64, 153, 255, 0.1) 0px, 
+        rgba(64, 153, 255, 0) 1px) 0 0 / 20px 20px;
+    pointer-events: none;
+  }
+  
+  .hologram-effect::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      rgba(64, 153, 255, 0) 0%, 
+      rgba(64, 153, 255, 0.5) 50%, 
+      rgba(64, 153, 255, 0) 100%);
+    animation: scan-line 2s linear infinite;
+    pointer-events: none;
+  }
+  
+  /* Scanning animation */
+  @keyframes scan-line {
+    0% {
+      top: 0;
+    }
+    100% {
+      top: 100%;
+    }
+  }
+  
+  /* Panel header and content */
+  .panel-header {
+    background: linear-gradient(90deg, 
+      rgba(14, 30, 70, 0.8) 0%, 
+      rgba(25, 52, 120, 0.8) 50%, 
+      rgba(14, 30, 70, 0.8) 100%);
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(64, 153, 255, 0.4);
+  }
+  
+  .panel-header h3 {
+    margin: 0;
+    color: #60dfff;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .panel-close-button {
+    background: rgba(8, 15, 40, 0.6);
+    border: 1px solid rgba(64, 153, 255, 0.5);
+    color: #60dfff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+  
+  .panel-close-button:hover {
+    background: rgba(64, 153, 255, 0.3);
+    box-shadow: 0 0 10px rgba(64, 153, 255, 0.5);
+  }
+  
+  .panel-content {
+    padding: 15px;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(64, 153, 255, 0.5) rgba(8, 15, 40, 0.4);
+  }
+  
+  .panel-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .panel-content::-webkit-scrollbar-track {
+    background: rgba(8, 15, 40, 0.4);
+  }
+  
+  .panel-content::-webkit-scrollbar-thumb {
+    background-color: rgba(64, 153, 255, 0.5);
+    border-radius: 3px;
+  }
+  
+  /* Specific styles for planet info panel */
+  .planet-info-panel {
+    overflow: visible;
+  }
+  
+  .planet-info-panel .hologram-effect {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  /* Animation classes for panel transitions */
+  .panel-slide-left-enter {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  
+  .panel-slide-left-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-left-exit {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  .panel-slide-left-exit-active {
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-right-enter {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  
+  .panel-slide-right-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-right-exit {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  .panel-slide-right-exit-active {
+    opacity: 0;
+    transform: translateX(50px);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-top-enter {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  
+  .panel-slide-top-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-top-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .panel-slide-top-exit-active {
+    opacity: 0;
+    transform: translateY(-50px);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-bottom-enter {
+    opacity: 0;
+    transform: translateY(50px) translateX(-50%);
+  }
+  
+  .panel-slide-bottom-enter-active {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-slide-bottom-exit {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+  
+  .panel-slide-bottom-exit-active {
+    opacity: 0;
+    transform: translateY(50px) translateX(-50%);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-fade-enter {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  
+  .panel-fade-enter-active {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .panel-fade-exit {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  
+  .panel-fade-exit-active {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  /* Improved targeting reticle */
+  .targeting-reticle {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+    border: 1px solid rgba(64, 153, 255, 0.7);
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(64, 153, 255, 0.4);
+    pointer-events: none;
+    z-index: 4;
+    animation: pulse 3s infinite ease-in-out;
+  }
+  
+  .targeting-reticle::before,
+  .targeting-reticle::after {
+    content: "";
+    position: absolute;
+    background-color: rgba(64, 153, 255, 0.7);
+  }
+  
+  .targeting-reticle::before {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    transform: translateY(-50%);
+  }
+  
+  .targeting-reticle::after {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    transform: translateX(-50%);
+  }
+  
+  .targeting-reticle-dot {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background-color: rgba(64, 153, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(64, 153, 255, 0.9);
+  }
+  
+  .targeting-reticle-dot:nth-child(1) {
+    top: -2px;
+    left: -2px;
+  }
+  
+  .targeting-reticle-dot:nth-child(2) {
+    top: -2px;
+    right: -2px;
+  }
+  
+  .targeting-reticle-dot:nth-child(3) {
+    bottom: -2px;
+    right: -2px;
+  }
+  
+  .targeting-reticle-dot:nth-child(4) {
+    bottom: -2px;
+    left: -2px;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
+      border-color: rgba(64, 153, 255, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(64, 153, 255, 0.7);
+      border-color: rgba(64, 153, 255, 1);
+    }
+    100% {
+      box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
+      border-color: rgba(64, 153, 255, 0.7);
+    }
+  }
+  
+  /* Cockpit center controls */
+  .cockpit-center-controls {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 5;
+  }
+  
+  /* Status indicators at top */
+  .status-bar {
+    position: fixed;
+    top: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    z-index: 15;
+    pointer-events: none;
+  }
+  
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+  
+  .status-indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #60dfff;
+    box-shadow: 0 0 10px #60dfff;
+  }
+  
+  .status-indicator-text {
+    font-size: 14px;
+    color: #e0f2ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .status-active .status-indicator-dot {
+    background-color: #60dfff;
+    box-shadow: 0 0 10px #60dfff;
+  }
+  
+  .status-warning .status-indicator-dot {
+    background-color: #f59e0b;
+    box-shadow: 0 0 10px #f59e0b;
+  }
+  
+  .status-danger .status-indicator-dot {
+    background-color: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+  }
