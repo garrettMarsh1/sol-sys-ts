@@ -127,8 +127,7 @@ const MainScene: React.FC = () => {
   return (
     <div className="relative w-full h-screen">
       <div ref={containerRef} className="absolute inset-0" />
-
-      {/* Game HUD */}
+  
       <GameHUD
         currentPlanet={currentPlanet}
         cameraPosition={cameraPosition}
@@ -155,32 +154,17 @@ const MainScene: React.FC = () => {
             ? "follow"
             : "fps"
         }
-      />
-
-      {/* Camera Controls UI */}
-      <CameraControlsUI
-        cameraMode={cameraMode}
-        currentTarget={currentPlanet}
-        position={cameraPosition}
-        speed={cameraSpeed}
         autopilotProgress={autopilotProgress}
         warpProgress={warpProgress}
-        onSetCameraMode={handleSetCameraMode}
-        onWarpToPlanet={handleWarpToPlanet}
-        onFollowPlanet={handleFollowPlanet}
         onStartAutopilot={handleStartAutopilot}
         onCancelAutopilot={handleCancelAutopilot}
-        planets={planets}
       />
     </div>
   );
-};
+}
 
 export default MainScene;
 
-/**
- * Main scene controller with AdvancedSpaceCamera integration
- */
 class MainSceneWithAdvancedCamera {
   private renderer!: THREE.WebGLRenderer;
   private camera!: THREE.PerspectiveCamera;

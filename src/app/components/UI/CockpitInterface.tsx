@@ -3,16 +3,27 @@ import React, { useState } from "react";
 import { CSSTransition } from "react-transition-group";
 
 interface CockpitInterfaceProps {
-  children: React.ReactNode;
-  cameraPosition: { x: number; y: number; z: number };
-  cameraVelocity: { x: number; y: number; z: number };
-  currentPlanet: any | null;
-  navigationPanel?: React.ReactNode;
-  coordinatesPanel?: React.ReactNode;
-  mapPanel?: React.ReactNode;
-  timePanel?: React.ReactNode;
-  planetInfoPanel?: React.ReactNode;
-  controlsPanel?: React.ReactNode;
+    children: React.ReactNode;
+
+    currentPlanet: any | null;
+  
+    cameraPosition: { x: number; y: number; z: number };
+  
+    cameraVelocity: { x: number; y: number; z: number };
+  
+    navigationPanel: React.ReactNode;
+  
+    coordinatesPanel: React.ReactNode;
+  
+    mapPanel: React.ReactNode;
+  
+    timePanel: React.ReactNode;
+  
+    planetInfoPanel: React.ReactNode;
+  
+    controlsPanel: React.ReactNode;
+  
+    destinationPanel: React.ReactNode;
 }
 
 // Panel positions and types
