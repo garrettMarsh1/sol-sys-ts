@@ -460,53 +460,73 @@ export default class AdvancedSpaceCamera {
     }
   }
 
-  /**
-   * Start warp drive to current target
-   */
   public startWarp(): void {
     if (!this.currentTarget) {
       console.warn("Cannot initiate warp: No target selected");
       return;
     }
-
+  
     // Store previous mode to return to after warp completes
     this.previousMode = this.mode;
     this.setMode(CameraMode.WARPING);
-
+  
     const targetPosition = this.currentTarget.position.clone();
     const currentPosition = this.position.clone();
+    
+    // Validate positions
+    if (isNaN(targetPosition.x) || isNaN(targetPosition.y) || isNaN(targetPosition.z)) {
+      console.error("Target has invalid position:", targetPosition);
+      this.cancelWarp();
+      return;
+    }
+    
+    if (isNaN(currentPosition.x) || isNaN(currentPosition.y) || isNaN(currentPosition.z)) {
+      console.error("Current position is invalid:", currentPosition);
+      this.cancelWarp();
+      return;
+    }
+  
     const distance = currentPosition.distanceTo(targetPosition);
-
+  
     // Set warp parameters
     this.warpActive = true;
     this.warpProgress = 0;
-
+  
     // Calculate suitable arrival position (offset from planet surface)
-    const arrivalDistance = this.currentTarget.radius * 5;
+    const arrivalDistance = Math.max(10000, this.currentTarget.radius * 5); // Minimum 10,000km
+    
+    // Create direction vector from target to our position (reversed from usual)
     const arrivalDirection = new THREE.Vector3()
       .subVectors(currentPosition, targetPosition)
       .normalize();
-    const arrivalPosition = targetPosition
-      .clone()
+      
+    // Add this vector to the target position with proper scale
+    const arrivalPosition = targetPosition.clone()
       .add(arrivalDirection.multiplyScalar(arrivalDistance));
-
+  
+    console.log("Warp parameters:", {
+      from: currentPosition,
+      to: arrivalPosition,
+      arrivalDistance
+    });
+  
     // Create warp animation using TWEEN
     this.warpTween = new TWEEN.Tween({ progress: 0 })
       .to({ progress: 1 }, 3000) // 3 second warp
       .easing(TWEEN.Easing.Quintic.InOut)
       .onUpdate((obj) => {
         this.warpProgress = obj.progress;
-
+  
         // Calculate intermediate position
         const newPosition = new THREE.Vector3().lerpVectors(
           currentPosition,
           arrivalPosition,
           this.warpProgress
         );
-
+  
         // Update position
         this.position.copy(newPosition);
-
+  
         // Look at target during warp
         this.lookAt(this.currentTarget!.position);
       })
@@ -514,14 +534,14 @@ export default class AdvancedSpaceCamera {
         // End warp
         this.warpActive = false;
         this.warpTween = null;
-
+  
         // Go into orbit mode after warp
         this.setMode(CameraMode.ORBIT);
-
+  
         console.log(`Warp complete: Arrived at ${this.currentTarget!.name}`);
       })
       .start();
-
+  
     console.log(`Warp drive engaged: Warping to ${this.currentTarget.name}`);
   }
 

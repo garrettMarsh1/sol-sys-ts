@@ -316,54 +316,61 @@ class MainSceneWithAdvancedCamera {
     }
   }
 
-  /**
-   * Set up the camera and advanced camera controller
-   */
-  private setupCamera() {
-    if (this.debug) console.log("Setting up camera");
-    
-    // Create a perspective camera with appropriate parameters
-    this.camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      1,
-      1e12
-    );
+/**
+ * Set up the camera and advanced camera controller
+ */
+private setupCamera() {
+  if (this.debug) console.log("Setting up camera");
+  
+  // Create a perspective camera with properly configured clipping planes
+  // Solar system scale requires a much larger far plane and reasonable near plane
+  this.camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    10,  // Near plane - not too small to avoid precision issues
+    1e14  // Far plane - large enough for solar system scale
+  );
 
-    // Set initial camera position - Earth position + offset
-    const initialPosition = new THREE.Vector3(0 + 1000000, 0, 0);
-    this.camera.position.copy(initialPosition);
+  // Position initially near the Sun to see it properly
+  const initialPosition = new THREE.Vector3(10000, 5000, 10000);
+  this.camera.position.copy(initialPosition);
+  
+  // Make camera look at the Sun initially
+  this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-    if (this.debug) {
-      const axisHelper = new THREE.AxesHelper(1000000);
-      this.scene.add(axisHelper);
-      console.log("Camera initialized:", this.camera.position);
-    }
-
-    // Ensure we have planets array populated before creating camera
-    const planetObjects = this.planets ? this.planets.map(p => p.object) : [];
-
-    // Initialize the advanced camera with the same position we set above
-    this.advancedCamera = new AdvancedSpaceCamera(
-      this.camera,
-      planetObjects,
-      initialPosition,
-      {
-        onModeChange: (mode) => this.callbacks.onModeChange(mode),
-        onTargetChange: (target) => this.callbacks.onPlanetSelect(target),
-        onPositionChange: (position) =>
-          this.callbacks.onPositionUpdate({
-            x: position.x,
-            y: position.y,
-            z: position.z,
-          }),
-        onSpeedChange: (speed) => this.callbacks.onSpeedUpdate(speed),
-      }
-    );
-
-    if (this.debug) console.log("Advanced camera initialized");
+  if (this.debug) {
+    // Add axes to help with orientation
+    const axisHelper = new THREE.AxesHelper(5000000);
+    this.scene.add(axisHelper);
+    console.log("Camera initialized:", this.camera.position);
   }
 
+  // First setup planets array before creating camera
+  this.updateCameraPlanets();
+
+  // Initialize the advanced camera with proper position
+  this.advancedCamera = new AdvancedSpaceCamera(
+    this.camera,
+    this.planets.map(p => p.object),
+    initialPosition,
+    {
+      onModeChange: (mode) => this.callbacks.onModeChange(mode),
+      onTargetChange: (target) => this.callbacks.onPlanetSelect(target),
+      onPositionChange: (position) =>
+        this.callbacks.onPositionUpdate({
+          x: position.x,
+          y: position.y,
+          z: position.z,
+        }),
+      onSpeedChange: (speed) => this.callbacks.onSpeedUpdate(speed),
+    }
+  );
+
+  // Provide feedback to ensure camera was created properly
+  if (this.debug) {
+    console.log("Advanced camera initialized with planets:", this.planets.length);
+  }
+}
   /**
    * Set up scene lighting
    */
@@ -469,41 +476,45 @@ class MainSceneWithAdvancedCamera {
   /**
    * Set up post-processing effects
    */
-  private setupPostProcessing() {
-    if (this.debug) console.log("Setting up post-processing");
+/**
+ * Set up post-processing effects
+ */
+private setupPostProcessing() {
+  if (this.debug) console.log("Setting up post-processing");
 
-    try {
-      // Basic render pass (fallback if composers fail)
-      this.renderer.autoClear = true;
+  try {
+    // Set up basic render capabilities first
+    this.renderer.autoClear = true;
 
-      // Normal render pass
-      this.normalComposer = new EffectComposer(this.renderer);
-      const normalRenderPass = new RenderPass(this.scene, this.camera);
-      normalRenderPass.clear = true;
-      this.normalComposer.addPass(normalRenderPass);
+    // Simple composer setup to avoid conflicts
+    this.normalComposer = new EffectComposer(this.renderer);
+    const renderPass = new RenderPass(this.scene, this.camera);
+    this.normalComposer.addPass(renderPass);
 
-      // Bloom pass for sun and bright objects
-      this.bloomComposer = new EffectComposer(this.renderer);
-      const bloomRenderPass = new RenderPass(this.scene, this.camera);
-      bloomRenderPass.clear = true;
-      this.bloomComposer.addPass(bloomRenderPass);
+    // Use more conservative bloom settings to avoid rendering conflicts
+    this.bloomComposer = new EffectComposer(this.renderer);
+    const bloomRenderPass = new RenderPass(this.scene, this.camera);
+    this.bloomComposer.addPass(bloomRenderPass);
 
-      const bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(window.innerWidth, window.innerHeight),
-        1.0, // Bloom strength
-        0.4, // Bloom radius
-        0.85 // Bloom threshold
-      );
-      this.bloomComposer.addPass(bloomPass);
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.7,  // Lower strength
+      0.3,  // Smaller radius
+      0.9   // Higher threshold (less bloom)
+    );
+    this.bloomComposer.addPass(bloomPass);
 
-      // Enable all layers for camera
-      this.camera.layers.enableAll();
+    // Enable all layers for camera
+    this.camera.layers.enableAll();
 
-      if (this.debug) console.log("Post-processing set up successfully");
-    } catch (error) {
-      console.error("Error setting up post-processing:", error);
-    }
+    if (this.debug) console.log("Post-processing set up successfully");
+  } catch (error) {
+    console.error("Error setting up post-processing:", error);
+    
+    // Ensure basic rendering still works even if post-processing fails
+    if (this.debug) console.log("Falling back to basic rendering");
   }
+}
 
   /**
    * Main animation loop
@@ -643,8 +654,47 @@ class MainSceneWithAdvancedCamera {
    * Warp to a planet by name
    */
   public warpToPlanet(planetName: string) {
-    if (this.advancedCamera) {
-      this.advancedCamera.warpToPlanet(planetName);
+    if (!this.advancedCamera) {
+      console.warn("Cannot warp: Advanced camera not initialized");
+      return;
+    }
+    
+    try {
+      console.log(`Attempting to warp to planet: ${planetName}`);
+      
+      // Find the planet
+      const planet = this.planets.find(
+        (p) => p.object.name.toLowerCase() === planetName.toLowerCase()
+      );
+      
+      if (!planet) {
+        console.warn(`Planet "${planetName}" not found`);
+        return;
+      }
+      
+      // Make sure the planet has valid coordinates
+      if (isNaN(planet.object.position.x) || 
+          isNaN(planet.object.position.y) || 
+          isNaN(planet.object.position.z)) {
+        console.error(`Planet "${planetName}" has invalid coordinates`);
+        return;
+      }
+      
+      // Set the target and initiate warp
+      console.log(`Warping to ${planetName} at position:`, 
+        planet.object.position.x,
+        planet.object.position.y,
+        planet.object.position.z
+      );
+      
+      // First set the target
+      this.advancedCamera.setTarget(planet.object);
+      
+      // Then initiate warp
+      this.advancedCamera.startWarp();
+      
+    } catch (error) {
+      console.error(`Error warping to planet ${planetName}:`, error);
     }
   }
 
@@ -663,18 +713,52 @@ class MainSceneWithAdvancedCamera {
     }
   }
 
-  /**
-   * Start autopilot to current target
-   */
-  public startAutopilot() {
-    if (!this.advancedCamera) return;
+/**
+ * Start autopilot to current target with improved validation
+ */
+public startAutopilot() {
+  if (!this.advancedCamera) {
+    console.warn("Cannot start autopilot: Advanced camera not initialized");
+    return;
+  }
+  
+  const targetPlanet = this.advancedCamera.getTarget();
+  if (!targetPlanet) {
+    console.warn("Cannot start autopilot: No target planet selected");
+    return;
+  }
+  
+  try {
+    // Log the start of autopilot for debugging
+    console.log(`Starting autopilot to ${targetPlanet.name} at position:`, 
+      targetPlanet.position.x,
+      targetPlanet.position.y,
+      targetPlanet.position.z
+    );
     
-    // Show trajectory visualization before starting autopilot
-    if (this.trajectoryVisualization && this.advancedCamera.getTarget()) {
-      const targetPlanet = this.advancedCamera.getTarget()!;
+    // Calculate and show trajectory before starting autopilot
+    if (this.trajectoryVisualization) {
       const startPosition = this.advancedCamera.position.clone();
       const startVelocity = this.advancedCamera.getVelocity();
+      
+      console.log("Calculating trajectory path from", 
+        startPosition.x, startPosition.y, startPosition.z, 
+        "to", 
+        targetPlanet.position.x, targetPlanet.position.y, targetPlanet.position.z
+      );
 
+      // Validate positions don't contain NaN
+      if (isNaN(startPosition.x) || isNaN(startPosition.y) || isNaN(startPosition.z) ||
+          isNaN(targetPlanet.position.x) || isNaN(targetPlanet.position.y) || isNaN(targetPlanet.position.z)) {
+        console.error("Invalid coordinates detected for trajectory calculation");
+        
+        // Try to fix the position if possible
+        if (isNaN(startPosition.x) || isNaN(startPosition.y) || isNaN(startPosition.z)) {
+          startPosition.set(0, 0, 1000000); // Default safe position
+        }
+      }
+
+      // Create the trajectory visualization
       this.trajectoryVisualization.showTrajectory(
         startPosition,
         targetPlanet.position.clone(),
@@ -684,8 +768,14 @@ class MainSceneWithAdvancedCamera {
       );
     }
 
+    // Start autopilot navigation
     this.advancedCamera.startAutopilot();
+    console.log("Autopilot started successfully");
+    
+  } catch (error) {
+    console.error("Error starting autopilot:", error);
   }
+}
 
   /**
    * Cancel autopilot

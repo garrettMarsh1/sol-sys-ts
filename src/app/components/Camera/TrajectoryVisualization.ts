@@ -44,10 +44,18 @@ export default class TrajectoryVisualization {
       planets
     );
 
-    // Create line geometry for trajectory path
-    const lineGeometry = new THREE.BufferGeometry().setFromPoints(
-      trajectory.path
+    // Filter out any NaN values in the path
+    const validPath = trajectory.path.filter(point => 
+      !isNaN(point.x) && !isNaN(point.y) && !isNaN(point.z)
     );
+
+    if (validPath.length < 2) {
+      console.warn("Not enough valid points to create trajectory");
+      return trajectory;
+    }
+
+    // Create line geometry for trajectory path
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(validPath);
 
     // Different colors based on success status
     const color = trajectory.success ? 0x00ffff : 0xff7700;
@@ -64,18 +72,21 @@ export default class TrajectoryVisualization {
     this.trajectoryLine = new THREE.Line(lineGeometry, lineMaterial);
     this.scene.add(this.trajectoryLine);
 
-    // Add waypoint markers along the path
-    const waypointCount = Math.min(10, trajectory.path.length);
-    const waypointIndices = this.getEvenlySpacedIndices(
-      trajectory.path.length,
-      waypointCount
-    );
+    // Add waypoint markers along the path, but only if we have enough valid points
+    if (validPath.length >= 3) {
+      // Limit waypoint count for performance
+      const waypointCount = Math.min(10, validPath.length);
+      const waypointIndices = this.getEvenlySpacedIndices(
+        validPath.length,
+        waypointCount
+      );
 
-    for (const index of waypointIndices) {
-      const point = trajectory.path[index];
-      const waypointMesh = this.createWaypointMarker(point, color);
-      this.waypointMeshes.push(waypointMesh);
-      this.scene.add(waypointMesh);
+      for (const index of waypointIndices) {
+        const point = validPath[index];
+        const waypointMesh = this.createWaypointMarker(point, color);
+        this.waypointMeshes.push(waypointMesh);
+        this.scene.add(waypointMesh);
+      }
     }
 
     return trajectory;
