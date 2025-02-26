@@ -7,26 +7,29 @@ interface CockpitInterfaceProps {
   cameraPosition: { x: number; y: number; z: number };
   cameraVelocity: { x: number; y: number; z: number };
   currentPlanet: any | null;
+  navigationPanel?: React.ReactNode;
+  coordinatesPanel?: React.ReactNode;
+  mapPanel?: React.ReactNode;
+  timePanel?: React.ReactNode;
+  planetInfoPanel?: React.ReactNode;
+  controlsPanel?: React.ReactNode;
 }
 
 // Panel positions and types
 export type PanelPosition = "left" | "right" | "top" | "bottom";
 export type PanelType = "navigation" | "coordinates" | "planetInfo" | "map" | "time" | "controls";
 
-// Panel configuration interface
-interface PanelConfig {
-  type: PanelType;
-  label: string;
-  position: PanelPosition;
-  icon: string;
-  component: React.ReactNode;
-}
-
 const CockpitInterface: React.FC<CockpitInterfaceProps> = ({ 
   children, 
   cameraPosition, 
   cameraVelocity, 
-  currentPlanet 
+  currentPlanet,
+  navigationPanel,
+  coordinatesPanel,
+  mapPanel,
+  timePanel,
+  planetInfoPanel,
+  controlsPanel 
 }) => {
   // Track which panels are visible
   const [visiblePanels, setVisiblePanels] = useState<PanelType[]>([]);
@@ -155,7 +158,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               </button>
             </div>
             <div className="panel-content">
-              {/* Navigation panel will be inserted here */}
+              {navigationPanel}
             </div>
           </div>
         </div>
@@ -179,7 +182,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               </button>
             </div>
             <div className="panel-content">
-              {/* Coordinates panel will be inserted here */}
+              {coordinatesPanel}
             </div>
           </div>
         </div>
@@ -203,7 +206,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               </button>
             </div>
             <div className="panel-content">
-              {/* Map panel will be inserted here */}
+              {mapPanel}
             </div>
           </div>
         </div>
@@ -227,7 +230,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               </button>
             </div>
             <div className="panel-content">
-              {/* Time panel will be inserted here */}
+              {timePanel}
             </div>
           </div>
         </div>
@@ -242,7 +245,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
         <div className="panel-container panel-center planet-info-panel">
           <div className="hologram-effect">
             <div className="panel-header">
-              <h3>{(currentPlanet || selectedPlanet)?.name} Details</h3>
+              <h3>{(currentPlanet || selectedPlanet)?.name} Scanner</h3>
               <button 
                 className="panel-close-button" 
                 onClick={() => togglePanel("planetInfo")}
@@ -251,7 +254,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               </button>
             </div>
             <div className="panel-content">
-              {/* Planet info panel will be inserted here */}
+              {planetInfoPanel}
             </div>
           </div>
         </div>
@@ -275,13 +278,13 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
               </button>
             </div>
             <div className="panel-content">
-              {/* Controls panel will be inserted here */}
+              {controlsPanel}
             </div>
           </div>
         </div>
       </CSSTransition>
       
-      {/* Pass through children (original UI elements) */}
+      {/* Only render the cockpit frame, status bar, and targeting elements */}
       {children}
     </div>
   );

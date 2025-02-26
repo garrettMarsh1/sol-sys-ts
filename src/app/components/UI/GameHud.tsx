@@ -8,8 +8,7 @@ import CoordinatesDisplay from "./CoordinatesDisplay";
 import CockpitFrame from "./CockpitFrame";
 import CockpitInterface from "./CockpitInterface";
 import "./GameUI.css";
-import "./HolographicUI.css";
-import "./HolographicButtons.css";
+import "./HolographicUI.css"; // Import the new CSS
 
 interface GameHUDProps {
   currentPlanet: any | null;
