@@ -174,7 +174,7 @@ class MainSceneWithAdvancedCamera {
   private isInitialized: boolean = false;
   private trajectoryVisualization: TrajectoryVisualization | null = null;
   private animationFrameId: number | null = null; 
-  private debug: boolean = true;
+  private debug: boolean = false;
 
   private callbacks: {
     onPlanetSelect: (planet: Planet | null) => void;
@@ -299,8 +299,7 @@ private setupCamera() {
 
   if (this.debug) {
     // Add axes to help with orientation
-    const axisHelper = new THREE.AxesHelper(5000000);
-    this.scene.add(axisHelper);
+
     console.log("Camera initialized:", this.camera.position);
   }
 

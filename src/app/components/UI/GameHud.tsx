@@ -1,4 +1,4 @@
-// Updated GameHUD.tsx - improved map integration
+// Updated GameHUD.tsx with proper MiniMap integration
 import React, { useState, useEffect } from "react";
 import PlanetInfoPanel from "./PlanetInfoPanel";
 import CockpitFrame from "./CockpitFrame";
@@ -38,6 +38,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
   onFollowPlanet,
   planets,
   cameraMode,
+  rawPlanets,
   autopilotProgress = 0,
   warpProgress = 0,
   onStartAutopilot = () => {},
@@ -360,6 +361,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );  
 
+  // Map Panel - Now correctly uses the HolographicMiniMap component
   const mapPanel = (
     <div className="map-panel-content">
       <div 
@@ -370,18 +372,15 @@ const GameHUD: React.FC<GameHUDProps> = ({
           border: "1px solid rgba(64, 153, 255, 0.3)",
           borderRadius: "4px",
           overflow: "hidden",
-          position: "relative",
-          backgroundColor: "rgba(8, 15, 40, 0.6)"
+          position: "relative"
         }}
       >
-        <div className="h-full w-full flex items-center justify-center">
-          <div className="text-center text-cyan-400">
-            <p>System Map</p>
-            <p className="text-xs mt-2">
-              Use the Destination Selector to choose a planet
-            </p>
-          </div>
-        </div>
+        <HolographicMiniMap
+          cameraPosition={cameraPosition}
+          planets={planets}
+          currentPlanet={currentPlanet}
+          onSelectPlanet={handleSelectPlanet}
+        />
       </div>
       <div className="mt-2 px-2">
         <div className="hologram-buttons-container">
@@ -614,22 +613,6 @@ const GameHUD: React.FC<GameHUDProps> = ({
         controlsPanel={controlsPanel}
         destinationPanel={planetSelectorPanel}
       >
-        {/* Status bar at top */}
-        {/* <div className="status-bar">
-          <div className={`status-indicator ${cameraMode === "fps" ? "status-active" : ""}`}>
-            <div className="status-indicator-dot"></div>
-            <div className="status-indicator-text">Shields: 100%</div>
-          </div>
-          <div className={`status-indicator ${velocityMagnitude > 50 ? "status-warning" : "status-active"}`}>
-            <div className="status-indicator-dot"></div>
-            <div className="status-indicator-text">Fuel: 98%</div>
-          </div>
-          <div className="status-indicator status-active">
-            <div className="status-indicator-dot"></div>
-            <div className="status-indicator-text">Life Support: NOMINAL</div>
-          </div>
-        </div> */}
-
         {/* Add cockpit frame with ship controls */}
         <CockpitFrame cameraVelocity={cameraVelocity} />
 
