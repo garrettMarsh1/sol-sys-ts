@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 function degToRad(degrees: number): number {
     return degrees * (Math.PI / 180);
@@ -73,7 +74,7 @@ class Mars implements Planet{
         this.numberOfMoons = 2; // unitless
         this.hasRingSystem = false; // boolean
         this.hasGlobalMagneticField = true; // boolean
-        this.texture = new THREE.TextureLoader().load('/assets/images/mars.jpeg');
+        this.texture = textureLoader.load('/assets/images/mars.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)

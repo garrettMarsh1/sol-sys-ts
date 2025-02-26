@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 class Mercury implements Planet {
     public name: string;
@@ -68,7 +69,7 @@ class Mercury implements Planet {
         this.numberOfMoons = 0;
         this.hasRingSystem = false;
         this.hasGlobalMagneticField = false;
-        this.texture = new THREE.TextureLoader().load('/assets/images/mercury.jpeg');
+        this.texture = textureLoader.load('/assets/images/mercury.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.eccentricity = (this.aphelion - this.perihelion) / (this.aphelion + this.perihelion); // e = (r_max - r_min) / (r_max + r_min)
         this.meanAnomaly = 0; // M = 0 at t = 0

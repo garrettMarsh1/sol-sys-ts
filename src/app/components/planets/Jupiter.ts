@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 
 class Jupiter implements Planet{
@@ -72,7 +73,7 @@ class Jupiter implements Planet{
         this.numberOfMoons = 79; // unitless
         this.hasRingSystem = true; // boolean
         this.hasGlobalMagneticField = true; // boolean
-        this.texture = new THREE.TextureLoader().load('/assets/images/jupiter.jpeg');
+        this.texture = textureLoader.load('/assets/images/jupiter.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)

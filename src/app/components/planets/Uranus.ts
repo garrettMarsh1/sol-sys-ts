@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 class Uranus implements Planet{
     public name: string;
@@ -39,9 +40,9 @@ class Uranus implements Planet{
     public uranusParent: THREE.Object3D;
     public mesh: THREE.Mesh;
     public lastUpdateTime: number;
+    public texture: THREE.Texture;
     surfaceTemperature: number;
     diameter!: number;
-    texture!: THREE.Texture;
     magneticField: { polar: number; equatorial: number; };
 
     constructor() {
@@ -68,6 +69,7 @@ class Uranus implements Planet{
         this.numberOfMoons = 27;
         this.hasRingSystem = true;
         this.hasGlobalMagneticField = true;
+        this.texture = textureLoader.load('/assets/images/uranus.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
@@ -102,7 +104,7 @@ class Uranus implements Planet{
         this.mesh = new THREE.Mesh(
             new THREE.SphereGeometry(this.radius, 96, 96),
             new THREE.MeshPhongMaterial({
-                map: new THREE.TextureLoader().load('/assets/images/uranus.jpeg')
+                map: this.texture
             })
         );
 

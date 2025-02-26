@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 class Neptune implements Planet{
     public name: string;
@@ -70,7 +71,7 @@ class Neptune implements Planet{
         this.surfacePressure = 0;
         this.hasRingSystem = false;
         this.hasGlobalMagneticField = true;
-        this.texture = new THREE.TextureLoader().load('/assets/images/neptune.jpeg');
+        this.texture = textureLoader.load('/assets/images/neptune.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)

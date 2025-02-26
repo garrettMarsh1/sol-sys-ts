@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 class Pluto implements Planet{
     public name: string;
@@ -70,7 +71,7 @@ class Pluto implements Planet{
         this.moons = [];
         this.hasRingSystem = false;
         this.hasGlobalMagneticField = false;
-        this.texture = new THREE.TextureLoader().load('/assets/images/pluto.jpeg');
+        this.texture = textureLoader.load('/assets/images/pluto.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)

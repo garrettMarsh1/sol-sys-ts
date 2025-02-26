@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Sun from './Sun';
 import { Planet } from '../Interface/PlanetInterface'
+import { textureLoader } from "../../Utils/TextureLoader";
 
 
 class Venus implements Planet{
@@ -70,8 +71,8 @@ class Venus implements Planet{
         this.numberOfMoons = 0; // unitless
         this.hasRingSystem = false; // boolean
         this.hasGlobalMagneticField = false; // boolean
-        this.texture = new THREE.TextureLoader().load('/assets/images/venus.jpeg');
-        this.atmosphereTexture = new THREE.TextureLoader().load('/assets/images/venusAtmosphere.jpeg');
+        this.texture = textureLoader.load('/assets/images/venus.jpeg');
+        this.atmosphereTexture = textureLoader.load('/assets/images/venusAtmosphere.jpeg');
         this.semiMajorAxis = (this.aphelion + this.perihelion) / 2; // a = (r_max + r_min) / 2
         this.semiMinorAxis = Math.sqrt(this.aphelion * this.perihelion); // b = sqrt(r_max * r_min)
         this.eccentricity = this.orbitalEccentricity; // e = (r_max - r_min) / (r_max + r_min)
