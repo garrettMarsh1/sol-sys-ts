@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import PlanetInfoPanel from "./PlanetInfoPanel";
-import CockpitFrame from "./CockpitFrame";
 import CockpitInterface from "./CockpitInterface";
 import HolographicMiniMap from "./MiniMap";
 import "./GameUI.css";
-import "./HolographicUI.css";
-import "./HolographicButtons.css";
+import "./3d-additional-styles.css"
+import "./3d-cockpit.css"
 
 interface GameHUDProps {
   currentPlanet: any | null;
@@ -733,9 +732,14 @@ const GameHUD: React.FC<GameHUDProps> = ({
         planetInfoPanel={planetInfoPanel}
         controlsPanel={controlsPanel}
         destinationPanel={planetSelectorPanel}
+        cameraMode={cameraMode}
+        timeScale={timeScale}
+        autopilotProgress={autopilotProgress}
+        warpProgress={warpProgress}
+        
       >
         {}
-        <CockpitFrame cameraVelocity={cameraVelocity} />
+        {/* <CockpitFrame cameraVelocity={cameraVelocity} /> */}
 
         {}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">

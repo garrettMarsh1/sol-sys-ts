@@ -26,8 +26,6 @@ import { Planet } from "./Interface/PlanetInterface";
 import TrajectoryVisualization from "./Camera/TrajectoryVisualization";
 
 import SolarSystemManager from "./Physics/SolarSystemManager";
-import OrbitalMechanics from "./Physics/OrbitalMechanics";
-import AstronomicalTime from "./Physics/AstronomicalTime";
 
 const MainScene: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
