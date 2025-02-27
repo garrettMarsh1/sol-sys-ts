@@ -232,6 +232,8 @@ export abstract class BasePlanet implements Planet {
     // Update orbital position
     this.calculateOrbit(dt);
 
+    this.planetGroup.position.copy(this.position);
+
     // Update rotation (with correct direction based on obliquity)
     this.updateRotation(dt);
   }

@@ -16,8 +16,8 @@ export default class SolarSystemManager {
   private time: AstronomicalTime;
 
   // Physics simulation options
-  private useKeplerianOrbits: boolean = true;
-  private useNBodyPhysics: boolean = false;
+  private useKeplerianOrbits: boolean = false;
+  private useNBodyPhysics: boolean = true;
   private useRelativisticEffects: boolean = true;
 
   // Reference to the Sun (for calculations)
@@ -94,8 +94,6 @@ export default class SolarSystemManager {
   public update(currentRealTime: number = Date.now()): void {
     // Update astronomical time and get elapsed simulation seconds
     const elapsedSeconds = this.time.update(currentRealTime);
-
-    // Skip update if no time has passed
     if (elapsedSeconds <= 0) return;
 
     // Update orbital elements for the current epoch
@@ -103,7 +101,7 @@ export default class SolarSystemManager {
       this.time.updateOrbitalElements(planet);
     }
 
-    // Update planet positions based on selected physics model
+    // Update planet positions
     if (this.useKeplerianOrbits) {
       this.updateWithKeplerianModel(elapsedSeconds);
     } else if (this.useNBodyPhysics) {
@@ -117,51 +115,27 @@ export default class SolarSystemManager {
   }
 
   /**
-   * Update planets using Keplerian orbital model (simplified, non-interacting)
+   * Update planets using the Keplerian orbital model (simplified, non-interacting)
+   * Simply call each planet's update method (which handles updating its own
+   * calculated position and copying it into its parent group).
    * @param elapsedSeconds Elapsed simulation time in seconds
    */
   private updateWithKeplerianModel(elapsedSeconds: number): void {
-    // Get the Sun's mass for calculations
-    const sunMass = this.sun ? this.sun.mass : 1.989e30; // Default if sun not found
-
     for (const planet of this.planets) {
       // Skip the Sun
       if (planet === this.sun) continue;
-
-      // Calculate orbital position with relativistic effects if enabled
-      if (this.useRelativisticEffects) {
-        // Use OrbitalMechanics static method for position calculation
-        const newPosition = OrbitalMechanics.calculateOrbitalPosition(
-          planet,
-          elapsedSeconds,
-          sunMass
-        );
-
-        // Update mesh and actual position
-        planet.mesh.position.copy(newPosition);
-        planet.position.copy(newPosition);
-      } else {
-        // Use planet's own orbit calculation method if it exists
-        if (typeof planet.calculateOrbit === "function") {
-          planet.calculateOrbit(elapsedSeconds);
-        } else {
-          // Fall back to standard update method
-          planet.update(elapsedSeconds);
-        }
-      }
-
-      // Update rotation - all planets should be able to handle this
-      this.updatePlanetRotation(planet, elapsedSeconds);
+      // Let the planet update itself (this updates its internal position,
+      // its mesh position, and its parent group position as defined in BasePlanet.update)
+      planet.update(elapsedSeconds);
     }
   }
 
   /**
    * Update planets using N-body gravitational physics (full interactions)
-   * More accurate but computationally expensive
+   * More accurate but computationally expensive.
    * @param elapsedSeconds Elapsed simulation time in seconds
    */
   private updateWithNBodyPhysics(elapsedSeconds: number): void {
-    // Create arrays to store forces for each planet
     const accelerations: THREE.Vector3[] = this.planets.map(
       () => new THREE.Vector3()
     );
@@ -169,13 +143,9 @@ export default class SolarSystemManager {
     // Calculate gravitational forces between all planets
     for (let i = 0; i < this.planets.length; i++) {
       const planet1 = this.planets[i];
-
       for (let j = 0; j < this.planets.length; j++) {
-        if (i === j) continue; // Skip self-interaction
-
+        if (i === j) continue;
         const planet2 = this.planets[j];
-
-        // Calculate gravitational acceleration on planet1 due to planet2
         const force = this.calculateGravitationalForce(planet1, planet2);
         accelerations[i].add(force);
       }
@@ -186,25 +156,20 @@ export default class SolarSystemManager {
       this.applyRelativisticCorrections(accelerations, elapsedSeconds);
     }
 
-    // Update velocities and positions
+    // Update velocities and positions manually, then update parent groups
     for (let i = 0; i < this.planets.length; i++) {
       const planet = this.planets[i];
-
-      // Update velocity: v = v + a * dt
       planet.velocity.add(
         accelerations[i].clone().multiplyScalar(elapsedSeconds)
       );
-
-      // Update position: p = p + v * dt
-      const positionDelta = planet.velocity
-        .clone()
-        .multiplyScalar(elapsedSeconds);
-      planet.position.add(positionDelta);
-
-      // Update mesh position
+      planet.position.add(
+        planet.velocity.clone().multiplyScalar(elapsedSeconds)
+      );
       planet.mesh.position.copy(planet.position);
-
-      // Update rotation
+      if ((planet as any).planetGroup) {
+        (planet as any).planetGroup.position.copy(planet.position);
+      }
+      // Update rotation via our own helper
       this.updatePlanetRotation(planet, elapsedSeconds);
     }
   }
@@ -219,33 +184,19 @@ export default class SolarSystemManager {
     planet1: Planet,
     planet2: Planet
   ): THREE.Vector3 {
-    // Calculate distance vector and magnitude
     const distanceVector = new THREE.Vector3().subVectors(
       planet2.position,
       planet1.position
     );
     const distance = distanceVector.length();
-
-    // Skip if too close (prevents numerical instability)
     if (distance < planet1.radius + planet2.radius) {
       return new THREE.Vector3();
     }
-
-    // Convert to meters for calculations
     const distanceMeters = distance * 1000;
-
-    // Universal gravitational constant in m^3 kg^-1 s^-2
     const G = 6.6743e-11;
-
-    // Calculate force magnitude: F = G * (m1 * m2) / r²
     const forceMagnitude =
       (G * planet2.mass) / (distanceMeters * distanceMeters);
-
-    // Direction toward other planet
-    const direction = distanceVector.normalize();
-
-    // Calculate acceleration: a = F / m
-    return direction.multiplyScalar(forceMagnitude);
+    return distanceVector.normalize().multiplyScalar(forceMagnitude);
   }
 
   /**
@@ -257,33 +208,19 @@ export default class SolarSystemManager {
     accelerations: THREE.Vector3[],
     elapsedSeconds: number
   ): void {
-    // Speed of light in m/s
     const c = 299792458;
-
     for (let i = 0; i < this.planets.length; i++) {
       const planet = this.planets[i];
-
-      // Skip planets with very low velocities
-      const velocityMagnitude = planet.velocity.length() * 1000; // km/s to m/s
+      const velocityMagnitude = planet.velocity.length() * 1000; // convert km/s to m/s
       if (velocityMagnitude < 1000) continue;
-
-      // Calculate relativistic γ factor
       const gammaSq =
         1 / (1 - (velocityMagnitude * velocityMagnitude) / (c * c));
       const gamma = Math.sqrt(gammaSq);
-
-      // For extremely high velocities, cap the factor to prevent instability
       if (gamma > 2.0) continue;
-
-      // Apply relativistic mass increase effect on acceleration
-      // a = F/m becomes a = F/(γm) for relativistic mass
       accelerations[i].divideScalar(gamma);
-
-      // If close to the Sun, apply perihelion precession
       if (this.sun) {
         const distanceToSun = planet.position.distanceTo(this.sun.position);
         if (distanceToSun < planet.semiMajorAxis * 1.5) {
-          // Calculate precession rate (simplified)
           const sunMass = this.sun.mass;
           const precessionPerOrbit =
             (6 * Math.PI * 6.6743e-11 * sunMass) /
@@ -292,26 +229,17 @@ export default class SolarSystemManager {
               planet.semiMajorAxis *
               1000 *
               (1 - planet.eccentricity * planet.eccentricity));
-
-          // Apply small rotation to velocity vector
-          // This effectively creates the perihelion precession effect
-          const period = planet.orbitalPeriod * 86400; // days to seconds
+          const period = planet.orbitalPeriod * 86400;
           const angle =
             precessionPerOrbit * (elapsedSeconds / period) * 2 * Math.PI;
-
           if (Math.abs(angle) > 1e-12) {
-            // Create rotation axis (perpendicular to orbital plane)
             const orbit_normal = new THREE.Vector3()
               .crossVectors(planet.position, planet.velocity)
               .normalize();
-
-            // Create quaternion for rotation
             const quaternion = new THREE.Quaternion().setFromAxisAngle(
               orbit_normal,
               angle
             );
-
-            // Apply rotation to velocity vector
             planet.velocity.applyQuaternion(quaternion);
           }
         }
@@ -320,7 +248,8 @@ export default class SolarSystemManager {
   }
 
   /**
-   * Update planet rotation with proper axial tilt
+   * Update planet rotation with proper axial tilt.
+   * This helper is used in the N-body branch.
    * @param planet Planet to update
    * @param elapsedSeconds Elapsed simulation time in seconds
    */
@@ -341,7 +270,7 @@ export default class SolarSystemManager {
       planet.mesh.rotateY(rotationSpeed * elapsedSeconds * rotationMultiplier);
     }
 
-    // If the planet has its own axial tilt method, use that
+    // REMOVED: The problematic code that was resetting rotations
     if (typeof planet.applyAxialTilt === "function") {
       planet.applyAxialTilt();
     }
@@ -352,14 +281,10 @@ export default class SolarSystemManager {
    * @param planet Planet to visualize orbit for
    */
   private createOrbitVisualization(planet: Planet): void {
-    // Skip the Sun
     if (planet.name.toLowerCase() === "sun") return;
 
-    // Generate points for the elliptical orbit
     const points: THREE.Vector3[] = [];
     const segments = 256;
-
-    // Convert orbital elements for calculation
     const a = planet.semiMajorAxis;
     const e = planet.eccentricity;
     const i = planet.orbitalInclination * (Math.PI / 180);
@@ -367,17 +292,10 @@ export default class SolarSystemManager {
     const Omega = (planet.longitudeOfAscendingNode || 0) * (Math.PI / 180);
 
     for (let j = 0; j <= segments; j++) {
-      // True anomaly around the orbit
       const theta = (j / segments) * 2 * Math.PI;
-
-      // Distance from focus
       const r = (a * (1 - e * e)) / (1 + e * Math.cos(theta));
-
-      // Position in orbital plane
       const x_orbit = r * Math.cos(theta);
       const y_orbit = r * Math.sin(theta);
-
-      // Transform to 3D space accounting for inclination and orientation
       const x =
         (Math.cos(Omega) * Math.cos(omega) -
           Math.sin(Omega) * Math.sin(omega) * Math.cos(i)) *
@@ -385,7 +303,6 @@ export default class SolarSystemManager {
         (-Math.cos(Omega) * Math.sin(omega) -
           Math.sin(Omega) * Math.cos(omega) * Math.cos(i)) *
           y_orbit;
-
       const y =
         (Math.sin(Omega) * Math.cos(omega) +
           Math.cos(Omega) * Math.sin(omega) * Math.cos(i)) *
@@ -393,19 +310,14 @@ export default class SolarSystemManager {
         (-Math.sin(Omega) * Math.sin(omega) +
           Math.cos(Omega) * Math.cos(omega) * Math.cos(i)) *
           y_orbit;
-
       const z =
         Math.sin(omega) * Math.sin(i) * x_orbit +
         Math.cos(omega) * Math.sin(i) * y_orbit;
-
       points.push(new THREE.Vector3(x, y, z));
     }
 
-    // Create the orbit line
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-    // Assign a color based on the planet
-    let orbitColor = 0xffffff; // Default white
+    let orbitColor = 0xffffff;
     switch (planet.name.toLowerCase()) {
       case "mercury":
         orbitColor = 0xcccccc;
@@ -435,17 +347,13 @@ export default class SolarSystemManager {
         orbitColor = 0x8b4513;
         break;
     }
-
     const material = new THREE.LineBasicMaterial({
       color: orbitColor,
       transparent: true,
       opacity: 0.5,
     });
-
     const orbitLine = new THREE.Line(geometry, material);
     orbitLine.name = `${planet.name}-orbit`;
-
-    // Add to scene and store reference
     this.scene.add(orbitLine);
     this.orbitLines.push(orbitLine);
   }
@@ -454,16 +362,11 @@ export default class SolarSystemManager {
    * Update orbit visualizations to match current orbital elements
    */
   private updateOrbitVisualizations(): void {
-    // For now, just ensure all planets have orbit lines
     for (const planet of this.planets) {
-      // Skip the Sun
       if (planet.name.toLowerCase() === "sun") continue;
-
-      // Check if this planet has an orbit line
       const hasOrbit = this.orbitLines.some(
         (line) => line.name === `${planet.name}-orbit`
       );
-
       if (!hasOrbit) {
         this.createOrbitVisualization(planet);
       }
@@ -481,13 +384,10 @@ export default class SolarSystemManager {
     if (index >= 0) {
       const orbitLine = this.orbitLines[index];
       this.scene.remove(orbitLine);
-
-      // Dispose of geometry and material
       if (orbitLine.geometry) orbitLine.geometry.dispose();
       if ((orbitLine.material as THREE.Material).dispose) {
         (orbitLine.material as THREE.Material).dispose();
       }
-
       this.orbitLines.splice(index, 1);
     }
   }
@@ -513,8 +413,6 @@ export default class SolarSystemManager {
    */
   public setDate(date: Date): void {
     this.time.setDate(date);
-
-    // Update orbital elements for the new epoch
     for (const planet of this.planets) {
       this.time.updateOrbitalElements(planet);
     }
@@ -557,26 +455,20 @@ export default class SolarSystemManager {
    */
   public setShowOrbits(show: boolean): void {
     this.showOrbits = show;
-
     if (show) {
-      // Create orbit visualizations for all planets
       for (const planet of this.planets) {
         if (planet.name.toLowerCase() !== "sun") {
           this.createOrbitVisualization(planet);
         }
       }
     } else {
-      // Remove all orbit visualizations
       for (const orbitLine of this.orbitLines) {
         this.scene.remove(orbitLine);
-
-        // Dispose of geometry and material
         if (orbitLine.geometry) orbitLine.geometry.dispose();
         if ((orbitLine.material as THREE.Material).dispose) {
           (orbitLine.material as THREE.Material).dispose();
         }
       }
-
       this.orbitLines = [];
     }
   }
@@ -603,17 +495,13 @@ export default class SolarSystemManager {
    * Clean up resources
    */
   public dispose(): void {
-    // Remove all orbit visualizations
     for (const orbitLine of this.orbitLines) {
       this.scene.remove(orbitLine);
-
-      // Dispose of geometry and material
       if (orbitLine.geometry) orbitLine.geometry.dispose();
       if ((orbitLine.material as THREE.Material).dispose) {
         (orbitLine.material as THREE.Material).dispose();
       }
     }
-
     this.orbitLines = [];
     this.planets = [];
     this.sun = null;

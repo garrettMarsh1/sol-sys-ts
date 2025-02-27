@@ -3,27 +3,34 @@ import React, { useState, useEffect } from "react";
 import { CSSTransition } from "react-transition-group";
 
 interface CockpitInterfaceProps {
-    children: React.ReactNode;
-    currentPlanet: any | null;
-    cameraPosition: { x: number; y: number; z: number };
-    cameraVelocity: { x: number; y: number; z: number };
-    navigationPanel: React.ReactNode;
-    coordinatesPanel: React.ReactNode;
-    mapPanel: React.ReactNode;
-    timePanel: React.ReactNode;
-    planetInfoPanel: React.ReactNode;
-    controlsPanel: React.ReactNode;
-    destinationPanel: React.ReactNode;
+  children: React.ReactNode;
+  currentPlanet: any | null;
+  cameraPosition: { x: number; y: number; z: number };
+  cameraVelocity: { x: number; y: number; z: number };
+  navigationPanel: React.ReactNode;
+  coordinatesPanel: React.ReactNode;
+  mapPanel: React.ReactNode;
+  timePanel: React.ReactNode;
+  planetInfoPanel: React.ReactNode;
+  controlsPanel: React.ReactNode;
+  destinationPanel: React.ReactNode;
 }
 
 // Panel positions and types
 export type PanelPosition = "left" | "right" | "top" | "bottom";
-export type PanelType = "navigation" | "coordinates" | "planetInfo" | "map" | "time" | "controls" | "destination";
+export type PanelType =
+  | "navigation"
+  | "coordinates"
+  | "planetInfo"
+  | "map"
+  | "time"
+  | "controls"
+  | "destination";
 
-const CockpitInterface: React.FC<CockpitInterfaceProps> = ({ 
-  children, 
-  cameraPosition, 
-  cameraVelocity, 
+const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
+  children,
+  cameraPosition,
+  cameraVelocity,
   currentPlanet,
   navigationPanel,
   coordinatesPanel,
@@ -31,42 +38,42 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
   timePanel,
   planetInfoPanel,
   controlsPanel,
-  destinationPanel
+  destinationPanel,
 }) => {
   // Track which panels are visible
   const [visiblePanels, setVisiblePanels] = useState<PanelType[]>([]);
   const [selectedPlanet, setSelectedPlanet] = useState<any | null>(null);
-  
+
   // Update selectedPlanet when currentPlanet changes
   useEffect(() => {
     if (currentPlanet) {
       setSelectedPlanet(currentPlanet);
     }
   }, [currentPlanet]);
-  
+
   // Function to toggle panel visibility
   const togglePanel = (panelType: PanelType) => {
     console.log(`Toggling panel: ${panelType}`);
-    
+
     // Special handling for the destination panel
-    if (panelType === 'destination') {
+    if (panelType === "destination") {
       // If map is visible, hide it when showing destination
-      if (isPanelVisible('map')) {
-        setVisiblePanels(prev => prev.filter(p => p !== 'map'));
+      if (isPanelVisible("map")) {
+        setVisiblePanels((prev) => prev.filter((p) => p !== "map"));
       }
     }
-    
+
     // Special handling for the map panel
-    if (panelType === 'map') {
+    if (panelType === "map") {
       // If destination is visible, hide it when showing map
-      if (isPanelVisible('destination')) {
-        setVisiblePanels(prev => prev.filter(p => p !== 'destination'));
+      if (isPanelVisible("destination")) {
+        setVisiblePanels((prev) => prev.filter((p) => p !== "destination"));
       }
     }
-    
-    setVisiblePanels(prev => 
-      prev.includes(panelType) 
-        ? prev.filter(p => p !== panelType) 
+
+    setVisiblePanels((prev) =>
+      prev.includes(panelType)
+        ? prev.filter((p) => p !== panelType)
         : [...prev, panelType]
     );
   };
@@ -87,11 +94,16 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
   // Get the animation class for a panel based on its position
   const getPanelAnimationClass = (position: PanelPosition): string => {
     switch (position) {
-      case "left": return "panel-slide-left";
-      case "right": return "panel-slide-right";
-      case "top": return "panel-slide-top";
-      case "bottom": return "panel-slide-bottom";
-      default: return "panel-slide-left";
+      case "left":
+        return "panel-slide-left";
+      case "right":
+        return "panel-slide-right";
+      case "top":
+        return "panel-slide-top";
+      case "bottom":
+        return "panel-slide-bottom";
+      default:
+        return "panel-slide-left";
     }
   };
 
@@ -101,60 +113,74 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
       <div className="cockpit-frame">
         {/* Left side cockpit controls */}
         <div className="cockpit-controls-left">
-          <button 
-            className={`cockpit-button ${isPanelVisible("navigation") ? "cockpit-button-active" : ""}`} 
+          <button
+            className={`cockpit-button ${
+              isPanelVisible("navigation") ? "cockpit-button-active" : ""
+            }`}
             onClick={() => togglePanel("navigation")}
           >
             <span className="cockpit-button-icon">⚙️</span>
             <span className="cockpit-button-label">NAV</span>
           </button>
-          
-          <button 
-            className={`cockpit-button ${isPanelVisible("coordinates") ? "cockpit-button-active" : ""}`} 
+
+          <button
+            className={`cockpit-button ${
+              isPanelVisible("coordinates") ? "cockpit-button-active" : ""
+            }`}
             onClick={() => togglePanel("coordinates")}
           >
             <span className="cockpit-button-icon">🔍</span>
             <span className="cockpit-button-label">SYS</span>
           </button>
-          
-          <button 
-            className={`cockpit-button ${isPanelVisible("controls") ? "cockpit-button-active" : ""}`} 
+
+          <button
+            className={`cockpit-button ${
+              isPanelVisible("controls") ? "cockpit-button-active" : ""
+            }`}
             onClick={() => togglePanel("controls")}
           >
             <span className="cockpit-button-icon">📋</span>
             <span className="cockpit-button-label">CTRL</span>
           </button>
 
-          <button 
-            className={`cockpit-button ${isPanelVisible("destination") ? "cockpit-button-active" : ""}`} 
+          <button
+            className={`cockpit-button ${
+              isPanelVisible("destination") ? "cockpit-button-active" : ""
+            }`}
             onClick={() => togglePanel("destination")}
           >
             <span className="cockpit-button-icon">🚀</span>
             <span className="cockpit-button-label">DEST</span>
           </button>
         </div>
-        
+
         {/* Right side cockpit controls */}
         <div className="cockpit-controls-right">
-          <button 
-            className={`cockpit-button ${isPanelVisible("map") ? "cockpit-button-active" : ""}`} 
+          <button
+            className={`cockpit-button ${
+              isPanelVisible("map") ? "cockpit-button-active" : ""
+            }`}
             onClick={() => togglePanel("map")}
           >
             <span className="cockpit-button-icon">🗺️</span>
             <span className="cockpit-button-label">MAP</span>
           </button>
-          
-          <button 
-            className={`cockpit-button ${isPanelVisible("time") ? "cockpit-button-active" : ""}`} 
+
+          <button
+            className={`cockpit-button ${
+              isPanelVisible("time") ? "cockpit-button-active" : ""
+            }`}
             onClick={() => togglePanel("time")}
           >
             <span className="cockpit-button-icon">⏱️</span>
             <span className="cockpit-button-label">TIME</span>
           </button>
-          
+
           {currentPlanet && (
-            <button 
-              className={`cockpit-button ${isPanelVisible("planetInfo") ? "cockpit-button-active" : ""}`} 
+            <button
+              className={`cockpit-button ${
+                isPanelVisible("planetInfo") ? "cockpit-button-active" : ""
+              }`}
               onClick={() => togglePanel("planetInfo")}
             >
               <span className="cockpit-button-icon">🪐</span>
@@ -162,7 +188,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
             </button>
           )}
         </div>
-        
+
         {/* Central targeting system */}
         <div className="cockpit-center-controls">
           <div className="targeting-reticle">
@@ -173,7 +199,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           </div>
         </div>
       </div>
-      
+
       {/* Animated panel containers */}
       <CSSTransition
         in={isPanelVisible("navigation")}
@@ -185,20 +211,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>Navigation Control</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("navigation")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {navigationPanel}
-            </div>
+            <div className="panel-content">{navigationPanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       <CSSTransition
         in={isPanelVisible("coordinates")}
         timeout={300}
@@ -209,20 +233,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>Coordinates System</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("coordinates")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {coordinatesPanel}
-            </div>
+            <div className="panel-content">{coordinatesPanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       <CSSTransition
         in={isPanelVisible("map")}
         timeout={300}
@@ -233,20 +255,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>Star Map</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("map")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {mapPanel}
-            </div>
+            <div className="panel-content">{mapPanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       <CSSTransition
         in={isPanelVisible("time")}
         timeout={300}
@@ -257,20 +277,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>Time Controls</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("time")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {timePanel}
-            </div>
+            <div className="panel-content">{timePanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       <CSSTransition
         in={isPanelVisible("planetInfo") && (currentPlanet || selectedPlanet)}
         timeout={300}
@@ -281,20 +299,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>{(currentPlanet || selectedPlanet)?.name} Scanner</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("planetInfo")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {planetInfoPanel}
-            </div>
+            <div className="panel-content">{planetInfoPanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       <CSSTransition
         in={isPanelVisible("controls")}
         timeout={300}
@@ -305,20 +321,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>Flight Controls</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("controls")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {controlsPanel}
-            </div>
+            <div className="panel-content">{controlsPanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       <CSSTransition
         in={isPanelVisible("destination")}
         timeout={300}
@@ -329,20 +343,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           <div className="hologram-effect">
             <div className="panel-header">
               <h3>Destination Selector</h3>
-              <button 
-                className="panel-close-button" 
+              <button
+                className="panel-close-button"
                 onClick={() => togglePanel("destination")}
               >
                 ×
               </button>
             </div>
-            <div className="panel-content">
-              {destinationPanel}
-            </div>
+            <div className="panel-content">{destinationPanel}</div>
           </div>
         </div>
       </CSSTransition>
-      
+
       {/* Only render the cockpit frame, status bar, and targeting elements */}
       {children}
     </div>

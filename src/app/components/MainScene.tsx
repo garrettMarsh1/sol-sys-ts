@@ -325,7 +325,7 @@ class MainSceneWithAdvancedCamera {
       1e14
     );
 
-    const initialPosition = new THREE.Vector3(10000, 5000, 10000);
+    const initialPosition = new THREE.Vector3(1000000, 5000, 10000);
     this.camera.position.copy(initialPosition);
     this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
@@ -576,6 +576,22 @@ class MainSceneWithAdvancedCamera {
       this.render();
     } catch (error) {
       console.error("Error in animation loop:", error);
+    }
+    //log planet parent positoon and mesh position of earth
+    if (this.debug) {
+      const earth = this.planets.find((p) => p.object.name === "Earth");
+      if (earth) {
+        console.log(
+          `Earth position: ${earth.object.position.x}, ${earth.object.position.y}, ${earth.object.position.z}`
+        );
+        console.log(
+          `Earth mesh position: ${earth.mesh.position.x}, ${earth.mesh.position.y}, ${earth.mesh.position.z}`
+        );
+        //console log parent position
+        console.log(
+          `Earth parent position: ${earth.mesh.parent?.position.x}, ${earth.mesh.parent?.position.y}, ${earth.mesh.parent?.position.z}`
+        );
+      }
     }
   };
 

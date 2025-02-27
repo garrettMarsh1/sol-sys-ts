@@ -3,37 +3,60 @@ import * as THREE from "three";
 import { textureLoader } from "../../Utils/TextureLoader";
 import { BasePlanet } from "./BasePlanet";
 
-// Preserve the original GLSL shaders
+// --- Updated Shaders (World-Space Lighting) ---
+
 const vertexShader = `
+// No built-in uniform/attribute declarations here
 precision highp float;
-varying vec3 vNormal;
+
 varying vec2 vUv;
 varying vec3 vWorldPosition;
-varying vec3 vDebugColor;
+varying vec3 vWorldNormal;
 
 void main() {
-    vDebugColor = vWorldPosition;
-    vNormal = normalize(normalMatrix * normal);
+    // 'position', 'normal', and 'uv' are already injected by Three.js
+    // 'modelMatrix', 'viewMatrix', 'projectionMatrix' are also injected
+
     vUv = uv;
-    vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vWorldPosition = worldPos.xyz;
+
+    mat3 normalMatrixWorld = mat3(transpose(inverse(modelMatrix)));
+    vWorldNormal = normalize(normalMatrixWorld * normal);
+
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
 }
+
 `;
 
 const fragmentShader = `
 precision highp float;
+
+// Textures
 uniform sampler2D earthMap;
 uniform sampler2D nightMap;
+
+// The Sun's position in world space
 uniform vec3 lightPos;
-varying vec3 vNormal;
+
+// Varyings from vertex shader
 varying vec2 vUv;
 varying vec3 vWorldPosition;
+varying vec3 vWorldNormal;
 
 void main() {
+    // Day and night textures
     vec4 dayColor = texture2D(earthMap, vUv);
     vec4 nightColor = texture2D(nightMap, vUv);
+
+    // Light direction in world space
     vec3 lightDirection = normalize(lightPos - vWorldPosition);
-    float lightIntensity = max(dot(vNormal, lightDirection), 0.0);
+
+    // Simple Lambertian diffuse
+    float lightIntensity = max(dot(normalize(vWorldNormal), lightDirection), 0.0);
+
+    // Mix day and night textures based on light intensity
     vec4 finalColor = mix(nightColor, dayColor, lightIntensity);
     gl_FragColor = vec4(finalColor.rgb, 1.0);
 }
@@ -61,17 +84,17 @@ class Earth extends BasePlanet {
 
   // Orbital parameters (Keplerian elements)
   public distanceFromSun: number = 149597890; // km (average)
-  public perihelion: number = 147095000; // km (closest approach to Sun)
-  public aphelion: number = 152100000; // km (furthest from Sun)
-  public semiMajorAxis: number = 149597890; // km (a) - size of the orbit
-  public semiMinorAxis: number = 149577000; // km (b) - width of the orbit
-  public eccentricity: number = 0.0167; // (e) - shape of the orbit (0=circle, 0-1=ellipse)
-  public orbitalPeriod: number = 365.256; // days (sidereal period)
-  public orbitalVelocity: number = 29.78; // km/s (average)
-  public orbitalInclination: number = 0.0; // degrees (i) - tilt of orbital plane
-  public orbitalEccentricity: number = 0.0167; // unitless - same as eccentricity
+  public perihelion: number = 147095000; // km
+  public aphelion: number = 152100000; // km
+  public semiMajorAxis: number = 149597890; // km
+  public semiMinorAxis: number = 149577000; // km
+  public eccentricity: number = 0.0167; // shape of orbit
+  public orbitalPeriod: number = 365.256; // days (sidereal)
+  public orbitalVelocity: number = 29.78; // km/s
+  public orbitalInclination: number = 0.0; // degrees
+  public orbitalEccentricity: number = 0.0167;
 
-  // Extended orbital elements (for 3D orbits and relativity)
+  // Extended orbital elements
   public longitudeOfAscendingNode: number = 174.873; // degrees (Ω)
   public argumentOfPerihelion: number = 288.064; // degrees (ω)
 
@@ -143,7 +166,8 @@ class Earth extends BasePlanet {
       uniforms: {
         earthMap: { value: this.texture },
         nightMap: { value: this.nightTexture },
-        lightPos: { value: new THREE.Vector3(0, 0, 0) }, // Sun position
+        // Sun position in world space (assuming Sun is at (0,0,0))
+        lightPos: { value: new THREE.Vector3(0, 0, 0) },
       },
     });
 
@@ -212,7 +236,7 @@ class Earth extends BasePlanet {
    * (Private method to replicate functionality from BasePlanet)
    */
   private initializeOrbitalElements(): void {
-    // Initialize orbital parameters from OrbitalMechanics
+    // Initialize orbital parameters
     if (!this.semiMinorAxis) {
       this.semiMinorAxis =
         this.semiMajorAxis *
@@ -223,7 +247,6 @@ class Earth extends BasePlanet {
     if (this.longitudeOfAscendingNode === undefined) {
       this.longitudeOfAscendingNode = 0;
     }
-
     if (this.argumentOfPerihelion === undefined) {
       this.argumentOfPerihelion = 0;
     }
@@ -240,8 +263,9 @@ class Earth extends BasePlanet {
     // Use BasePlanet's update for orbital mechanics
     super.update(dt);
 
-    // Update the light source position (Sun)
+    // If needed, update the Sun's position in the shader:
     if (this.shaderMaterial.uniforms) {
+      // e.g. keep it at (0, 0, 0) if your Sun is at origin
       this.shaderMaterial.uniforms.lightPos.value.set(0, 0, 0);
     }
   }
