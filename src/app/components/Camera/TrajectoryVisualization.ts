@@ -1,11 +1,8 @@
-// src/app/components/Camera/TrajectoryVisualization.ts
 import * as THREE from "three";
 import SpaceTrajectoryCalculator from "../Physics/SpaceTrajectoryCalculator";
 import { Planet } from "../Interface/PlanetInterface";
 
-/**
- * Visualizes autopilot trajectories in 3D space
- */
+
 export default class TrajectoryVisualization {
   private scene: THREE.Scene;
   private trajectoryCalculator: SpaceTrajectoryCalculator;
@@ -17,9 +14,7 @@ export default class TrajectoryVisualization {
     this.trajectoryCalculator = new SpaceTrajectoryCalculator();
   }
 
-  /**
-   * Calculate and display a trajectory from start to target
-   */
+  
   public showTrajectory(
     startPosition: THREE.Vector3,
     targetPosition: THREE.Vector3,
@@ -32,11 +27,9 @@ export default class TrajectoryVisualization {
     fuelRequired: number;
     success: boolean;
   } {
-    // Clean up previous trajectory visualization
-    this.clearTrajectory();
+        this.clearTrajectory();
 
-    // Calculate trajectory path
-    const trajectory = this.trajectoryCalculator.calculateTrajectory(
+        const trajectory = this.trajectoryCalculator.calculateTrajectory(
       startPosition,
       targetPosition,
       startVelocity,
@@ -44,8 +37,7 @@ export default class TrajectoryVisualization {
       planets
     );
 
-    // Filter out any NaN values in the path
-    const validPath = trajectory.path.filter(point => 
+        const validPath = trajectory.path.filter(point => 
       !isNaN(point.x) && !isNaN(point.y) && !isNaN(point.z)
     );
 
@@ -54,28 +46,22 @@ export default class TrajectoryVisualization {
       return trajectory;
     }
 
-    // Create line geometry for trajectory path
-    const lineGeometry = new THREE.BufferGeometry().setFromPoints(validPath);
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(validPath);
 
-    // Different colors based on success status
-    const color = trajectory.success ? 0x00ffff : 0xff7700;
+        const color = trajectory.success ? 0x00ffff : 0xff7700;
 
-    // Create line material with glowing effect
-    const lineMaterial = new THREE.LineBasicMaterial({
+        const lineMaterial = new THREE.LineBasicMaterial({
       color: color,
       linewidth: 1,
       transparent: true,
       opacity: 0.7,
     });
 
-    // Create line mesh
-    this.trajectoryLine = new THREE.Line(lineGeometry, lineMaterial);
+        this.trajectoryLine = new THREE.Line(lineGeometry, lineMaterial);
     this.scene.add(this.trajectoryLine);
 
-    // Add waypoint markers along the path, but only if we have enough valid points
-    if (validPath.length >= 3) {
-      // Limit waypoint count for performance
-      const waypointCount = Math.min(10, validPath.length);
+        if (validPath.length >= 3) {
+            const waypointCount = Math.min(10, validPath.length);
       const waypointIndices = this.getEvenlySpacedIndices(
         validPath.length,
         waypointCount
@@ -92,16 +78,12 @@ export default class TrajectoryVisualization {
     return trajectory;
   }
 
-  /**
-   * Create a waypoint marker mesh at the given position
-   */
+  
   private createWaypointMarker(
     position: THREE.Vector3,
     color: number
   ): THREE.Mesh {
-    // Create a small sphere for the waypoint
-    const geometry = new THREE.SphereGeometry(1000, 8, 8); // 1000km size for visibility
-    const material = new THREE.MeshBasicMaterial({
+        const geometry = new THREE.SphereGeometry(1000, 8, 8);     const material = new THREE.MeshBasicMaterial({
       color: color,
       transparent: true,
       opacity: 0.7,
@@ -113,20 +95,16 @@ export default class TrajectoryVisualization {
     return mesh;
   }
 
-  /**
-   * Get evenly spaced indices from an array
-   */
+  
   private getEvenlySpacedIndices(length: number, count: number): number[] {
     const indices: number[] = [];
 
     if (count >= length) {
-      // If requesting more points than available, return all indices
-      for (let i = 0; i < length; i++) {
+            for (let i = 0; i < length; i++) {
         indices.push(i);
       }
     } else {
-      // Calculate step size for even spacing
-      const step = (length - 1) / (count - 1);
+            const step = (length - 1) / (count - 1);
 
       for (let i = 0; i < count; i++) {
         const index = Math.round(i * step);
@@ -137,61 +115,48 @@ export default class TrajectoryVisualization {
     return indices;
   }
 
-  /**
-   * Update the trajectory visualization with the ship's progress
-   */
+  
   public updateProgress(progress: number): void {
     if (!this.trajectoryLine || this.waypointMeshes.length === 0) {
       return;
     }
 
-    // Update opacity of completed segments
-    const material = this.trajectoryLine.material as THREE.LineBasicMaterial;
+        const material = this.trajectoryLine.material as THREE.LineBasicMaterial;
 
-    // Fade out completed parts of the trajectory
-    for (let i = 0; i < this.waypointMeshes.length; i++) {
+        for (let i = 0; i < this.waypointMeshes.length; i++) {
       const waypointProgress = i / (this.waypointMeshes.length - 1);
 
       if (waypointProgress < progress) {
-        // Make passed waypoints fade out
-        this.waypointMeshes[i].visible = false;
+                this.waypointMeshes[i].visible = false;
       } else {
-        // Make upcoming waypoints visible
-        this.waypointMeshes[i].visible = true;
+                this.waypointMeshes[i].visible = true;
 
-        // Closest upcoming waypoint pulses
-        if (
+                if (
           waypointProgress >= progress &&
           (i === 0 ||
             (i > 0 && (i - 1) / (this.waypointMeshes.length - 1) < progress))
         ) {
-          const pulseIntensity = (Math.sin(Date.now() * 0.005) + 1) / 2; // 0-1 pulse
-          const mesh = this.waypointMeshes[i];
+          const pulseIntensity = (Math.sin(Date.now() * 0.005) + 1) / 2;           const mesh = this.waypointMeshes[i];
           const waypointMaterial = mesh.material as THREE.MeshBasicMaterial;
           waypointMaterial.opacity = 0.5 + 0.5 * pulseIntensity;
 
-          // Scale up the next waypoint slightly for visibility
-          const pulseScale = 1 + 0.2 * pulseIntensity;
+                    const pulseScale = 1 + 0.2 * pulseIntensity;
           mesh.scale.set(pulseScale, pulseScale, pulseScale);
         }
       }
     }
   }
 
-  /**
-   * Clear the current trajectory visualization
-   */
+  
   public clearTrajectory(): void {
-    // Remove trajectory line
-    if (this.trajectoryLine) {
+        if (this.trajectoryLine) {
       this.scene.remove(this.trajectoryLine);
       this.trajectoryLine.geometry.dispose();
       (this.trajectoryLine.material as THREE.Material).dispose();
       this.trajectoryLine = null;
     }
 
-    // Remove waypoint meshes
-    for (const mesh of this.waypointMeshes) {
+        for (const mesh of this.waypointMeshes) {
       this.scene.remove(mesh);
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
@@ -200,9 +165,7 @@ export default class TrajectoryVisualization {
     this.waypointMeshes = [];
   }
 
-  /**
-   * Clean up resources
-   */
+  
   public dispose(): void {
     this.clearTrajectory();
   }

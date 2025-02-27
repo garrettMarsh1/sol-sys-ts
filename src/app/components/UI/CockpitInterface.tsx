@@ -1,4 +1,3 @@
-// Updated CockpitInterface.tsx with better panel management
 import React, { useState, useEffect } from "react";
 import { CSSTransition } from "react-transition-group";
 
@@ -16,7 +15,6 @@ interface CockpitInterfaceProps {
   destinationPanel: React.ReactNode;
 }
 
-// Panel positions and types
 export type PanelPosition = "left" | "right" | "top" | "bottom";
 export type PanelType =
   | "navigation"
@@ -40,33 +38,26 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
   controlsPanel,
   destinationPanel,
 }) => {
-  // Track which panels are visible
-  const [visiblePanels, setVisiblePanels] = useState<PanelType[]>([]);
+    const [visiblePanels, setVisiblePanels] = useState<PanelType[]>([]);
   const [selectedPlanet, setSelectedPlanet] = useState<any | null>(null);
 
-  // Update selectedPlanet when currentPlanet changes
-  useEffect(() => {
+    useEffect(() => {
     if (currentPlanet) {
       setSelectedPlanet(currentPlanet);
     }
   }, [currentPlanet]);
 
-  // Function to toggle panel visibility
-  const togglePanel = (panelType: PanelType) => {
+    const togglePanel = (panelType: PanelType) => {
     console.log(`Toggling panel: ${panelType}`);
 
-    // Special handling for the destination panel
-    if (panelType === "destination") {
-      // If map is visible, hide it when showing destination
-      if (isPanelVisible("map")) {
+        if (panelType === "destination") {
+            if (isPanelVisible("map")) {
         setVisiblePanels((prev) => prev.filter((p) => p !== "map"));
       }
     }
 
-    // Special handling for the map panel
-    if (panelType === "map") {
-      // If destination is visible, hide it when showing map
-      if (isPanelVisible("destination")) {
+        if (panelType === "map") {
+            if (isPanelVisible("destination")) {
         setVisiblePanels((prev) => prev.filter((p) => p !== "destination"));
       }
     }
@@ -78,21 +69,18 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
     );
   };
 
-  // Function to check if panel is visible
-  const isPanelVisible = (panelType: PanelType): boolean => {
+    const isPanelVisible = (panelType: PanelType): boolean => {
     return visiblePanels.includes(panelType);
   };
 
-  // Function to show planet details
-  const showPlanetDetails = (planet: any) => {
+    const showPlanetDetails = (planet: any) => {
     setSelectedPlanet(planet);
     if (!isPanelVisible("planetInfo")) {
       togglePanel("planetInfo");
     }
   };
 
-  // Get the animation class for a panel based on its position
-  const getPanelAnimationClass = (position: PanelPosition): string => {
+    const getPanelAnimationClass = (position: PanelPosition): string => {
     switch (position) {
       case "left":
         return "panel-slide-left";
@@ -109,9 +97,9 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
 
   return (
     <div className="cockpit-interface">
-      {/* Main cockpit frame with interactive buttons */}
+      {}
       <div className="cockpit-frame">
-        {/* Left side cockpit controls */}
+        {}
         <div className="cockpit-controls-left">
           <button
             className={`cockpit-button ${
@@ -154,7 +142,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           </button>
         </div>
 
-        {/* Right side cockpit controls */}
+        {}
         <div className="cockpit-controls-right">
           <button
             className={`cockpit-button ${
@@ -189,7 +177,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
           )}
         </div>
 
-        {/* Central targeting system */}
+        {}
         <div className="cockpit-center-controls">
           <div className="targeting-reticle">
             <div className="targeting-reticle-dot"></div>
@@ -200,7 +188,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Animated panel containers */}
+      {}
       <CSSTransition
         in={isPanelVisible("navigation")}
         timeout={300}
@@ -355,7 +343,7 @@ const CockpitInterface: React.FC<CockpitInterfaceProps> = ({
         </div>
       </CSSTransition>
 
-      {/* Only render the cockpit frame, status bar, and targeting elements */}
+      {}
       {children}
     </div>
   );

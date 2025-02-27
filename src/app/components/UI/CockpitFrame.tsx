@@ -1,4 +1,3 @@
-// src/app/components/UI/CockpitFrame.tsx
 import React, { useEffect, useState } from "react";
 
 interface CockpitFrameProps {
@@ -12,26 +11,22 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
   const [warning, setWarning] = useState<string | null>(null);
   const [speedPercent, setSpeedPercent] = useState(0);
 
-  // Calculate the velocity magnitude
-  useEffect(() => {
+    useEffect(() => {
     const velocityMagnitude = Math.sqrt(
       cameraVelocity.x * cameraVelocity.x +
       cameraVelocity.y * cameraVelocity.y +
       cameraVelocity.z * cameraVelocity.z
     );
 
-    // Normalize to percentage (assuming max speed of 100 km/s)
-    const maxSpeed = 100;
+        const maxSpeed = 100;
     const percent = Math.min(100, (velocityMagnitude / maxSpeed) * 100);
     setSpeedPercent(percent);
 
-    // Set thrust values based on velocity components
-    setForwardThrust(Math.abs(cameraVelocity.z) / maxSpeed * 100);
+        setForwardThrust(Math.abs(cameraVelocity.z) / maxSpeed * 100);
     setLateralThrust(Math.abs(cameraVelocity.x) / maxSpeed * 100);
     setVerticalThrust(Math.abs(cameraVelocity.y) / maxSpeed * 100);
 
-    // Show warning at high speeds
-    if (velocityMagnitude > 75) {
+        if (velocityMagnitude > 75) {
       setWarning("WARNING: APPROACHING MAXIMUM VELOCITY");
     } else if (velocityMagnitude > 50) {
       setWarning("CAUTION: HIGH VELOCITY");
@@ -42,18 +37,18 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
 
   return (
     <>
-      {/* Cockpit frame using CSS */}
+      {}
       <div className="cockpit-frame-css">
         <div className="cockpit-side-left"></div>
         <div className="cockpit-side-right"></div>
       </div>
 
-      {/* Warning message */}
+      {}
       {warning && (
         <div className="hud-warning">{warning}</div>
       )}
 
-      {/* Thruster indicators */}
+      {}
       <div className="thruster-indicators">
         <div className="thruster-bar" style={{ marginRight: '10px' }}>
           <div className="thruster-label">LATERAL</div>
@@ -69,7 +64,7 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
         </div>
       </div>
 
-      {/* Speedometer */}
+      {}
       <div className="speedometer">
         <div 
           className="speedometer-needle"
@@ -80,7 +75,7 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
         <div className="speedometer-label">VELOCITY %</div>
       </div>
 
-      {/* Status indicators */}
+      {}
       <div className="status-indicators">
         <div className="status-item">
           <div className="status-indicator status-active"></div>
@@ -99,7 +94,7 @@ const CockpitFrame: React.FC<CockpitFrameProps> = ({ cameraVelocity }) => {
         </div>
       </div>
 
-      {/* Center targeting reticle with dots */}
+      {}
       <div className="targeting-reticle">
         <div className="targeting-reticle-dot"></div>
         <div className="targeting-reticle-dot"></div>

@@ -1,6 +1,6 @@
-/* No Man's Sky Style UI - Main CSS */
 
-/* Cockpit Frame Overlay */
+
+
 .cockpit-frame-css {
   position: fixed;
   top: 0;
@@ -8,7 +8,7 @@
   right: 0;
   bottom: 0;
   pointer-events: none;
-  z-index: 5; /* Lower z-index to avoid blocking panels */
+  z-index: 5; 
 }
 
 .cockpit-side-left,
@@ -36,7 +36,7 @@
   border-radius: 20px 0 0 20px;
 }
 
-/* Add cockpit frame top and bottom elements */
+
 .cockpit-frame-css::before,
 .cockpit-frame-css::after {
   content: "";
@@ -64,7 +64,7 @@
   border-radius: 50% 50% 0 0 / 20px 20px 0 0;
 }
 
-/* Status indicators at top right */
+
 .status-indicators {
   position: fixed;
   top: 16px;
@@ -72,7 +72,7 @@
   display: flex;
   gap: 20px;
   z-index: 20;
-  pointer-events: none; /* Only make indicators non-interactive */
+  pointer-events: none; 
 }
 
 .status-item {
@@ -115,7 +115,7 @@
   color: #e0f2ff;
 }
 
-/* Restyle panels for NMS cockpit layout */
+
 .game-panel {
   background: rgba(8, 15, 40, 0.8);
   backdrop-filter: blur(8px);
@@ -126,10 +126,10 @@
   color: #e0f2ff;
   overflow: hidden;
   transition: all 0.2s ease;
-  pointer-events: auto; /* Make panels interactive */
+  pointer-events: auto; 
 }
 
-/* Make the panel headers look more NMS-like */
+
 .game-panel-header {
   background: linear-gradient(
     90deg,
@@ -163,7 +163,7 @@
   color: #60dfff;
 }
 
-/* Game panel button - make sure it's interactive */
+
 .game-panel-button {
   background: rgba(20, 40, 80, 0.6);
   border: 1px solid rgba(64, 153, 255, 0.5);
@@ -184,7 +184,7 @@
   box-shadow: 0 0 10px rgba(64, 153, 255, 0.4);
 }
 
-/* HUD warning messages */
+
 .hud-warning {
   position: fixed;
   top: 120px;
@@ -213,7 +213,7 @@
   }
 }
 
-/* Center targeting reticle */
+
 .targeting-reticle {
   position: fixed;
   top: 50%;
@@ -252,7 +252,7 @@
   transform: translateX(-50%);
 }
 
-/* Add dots at the corners of the reticle */
+
 .targeting-reticle-dot {
   position: absolute;
   width: 4px;
@@ -282,7 +282,7 @@
   left: -2px;
 }
 
-/* Data labels and values */
+
 .data-label {
   color: #8ab4f8;
   font-size: 12px;
@@ -296,7 +296,7 @@
   font-size: 14px;
 }
 
-/* Buttons - ensure they're clickable */
+
 .game-button {
   background: rgba(25, 52, 120, 0.6);
   border: 1px solid rgba(64, 153, 255, 0.4);
@@ -360,7 +360,7 @@
   border-color: rgba(244, 67, 54, 0.8);
 }
 
-/* Progress bars */
+
 .progress-bar {
   width: 100%;
   height: 6px;
@@ -376,7 +376,7 @@
   transition: width 0.3s ease;
 }
 
-/* Thruster indicators */
+
 .thruster-indicators {
   position: fixed;
   bottom: 30px;
@@ -417,7 +417,7 @@
   text-transform: uppercase;
 }
 
-/* Speedometer */
+
 .speedometer {
   position: fixed;
   bottom: 140px;
@@ -490,7 +490,7 @@
   text-transform: uppercase;
 }
 
-/* Fix for panel positioning - NO OVERLAPS */
+
 .coordinates-panel {
   width: 280px;
   top: 80px;
@@ -541,7 +541,7 @@
   z-index: 15;
 }
 
-/* NMS style tabs */
+
 .game-tabs {
   display: flex;
   border-bottom: 1px solid rgba(64, 153, 255, 0.3);
@@ -569,7 +569,7 @@
   background: rgba(64, 153, 255, 0.15);
 }
 
-/* Animation for pulse effect */
+
 @keyframes pulse {
   0% {
     box-shadow: 0 0 5px rgba(64, 153, 255, 0.4);
@@ -582,14 +582,14 @@
   }
 }
 
-/* Fix for holographic map */
+
 .holographic-map {
   width: 100%;
   height: 230px;
   pointer-events: auto;
 }
 
-/* Planet image in info panel */
+
 .planet-image {
   width: 120px;
   height: 120px;
@@ -597,13 +597,13 @@
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
 }
 
-/* Dark panel for planet info */
+
 .game-panel-dark {
   background: rgba(5, 10, 25, 0.7);
   border-radius: 6px;
 }
 
-/* Global game UI container */
+
 .global-game-ui {
   position: fixed;
   top: 0;
@@ -614,12 +614,12 @@
   z-index: 10;
 }
 
-/* Allow pointer events on children but not the container */
+
 .global-game-ui * {
   pointer-events: auto;
 }
 
-/* Scan line effect for holographic displays */
+
 .holographic-scanline {
   position: absolute;
   top: 0;

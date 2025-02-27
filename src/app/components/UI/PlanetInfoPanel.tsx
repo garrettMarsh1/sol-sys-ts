@@ -1,4 +1,3 @@
-// Enhanced PlanetInfoPanel.tsx with relativistic physics support
 import React, { useState, useEffect } from "react";
 
 interface PlanetInfoPanelProps {
@@ -18,8 +17,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     "overview" | "physical" | "orbital" | "relativity"
   >("overview");
 
-  // Reset to overview tab when a new planet is selected
-  useEffect(() => {
+    useEffect(() => {
     setActiveTab("overview");
   }, [planet?.name]);
 
@@ -37,19 +35,14 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     }
   };
 
-  // Calculate relativistic precession
-  const calculatePrecession = (planet: any): string => {
+    const calculatePrecession = (planet: any): string => {
     if (!planet) return "0";
 
-    // Mercury has the largest precession (~43 arcsec/century)
-    if (planet.name === "Mercury") {
+        if (planet.name === "Mercury") {
       return "43.0 arcsec/century";
     }
 
-    // Calculate approximate precession using simplified formula
-    // For other planets based on their orbital parameters
-    const semiMajorAxisAU = planet.semiMajorAxis / 149597870.7; // Convert km to AU
-    const precession =
+            const semiMajorAxisAU = planet.semiMajorAxis / 149597870.7;     const precession =
       43.0 *
       (1 / semiMajorAxisAU) *
       (1 / (1 - planet.eccentricity * planet.eccentricity));
@@ -57,8 +50,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     return `${precession.toFixed(2)} arcsec/century`;
   };
 
-  // Get planet color for visualization
-  const getPlanetColor = (name: string): string => {
+    const getPlanetColor = (name: string): string => {
     switch (name.toLowerCase()) {
       case "sun":
         return "#ffcc00";
@@ -132,7 +124,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   backgroundColor: getPlanetColor(planet.name),
                 }}
               >
-                {/* Add rings for Saturn */}
+                {}
                 {planet.name === "Saturn" && (
                   <div
                     className="absolute inset-0 transform -rotate-12"
@@ -158,7 +150,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   </div>
                 )}
 
-                {/* Add atmosphere glow for Earth, Venus, etc. */}
+                {}
                 {["Earth", "Venus", "Uranus", "Neptune"].includes(
                   planet.name
                 ) && (
@@ -171,7 +163,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   ></div>
                 )}
 
-                {/* Add scanline effect */}
+                {}
                 <div
                   className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
                   style={{ zIndex: 2 }}
@@ -435,7 +427,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
         </div>
       )}
 
-      {/* New Relativity tab */}
+      {}
       {activeTab === "relativity" && (
         <div className="tab-content relativity-tab p-4">
           <div className="hologram-panel-dark p-3 mb-4 rounded">

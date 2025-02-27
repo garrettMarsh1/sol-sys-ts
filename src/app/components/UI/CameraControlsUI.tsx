@@ -1,4 +1,3 @@
-// src/app/components/UI/CameraControlsUI.tsx
 import React, { useState, useEffect } from "react";
 import { CameraMode } from "../Camera/AdvancedSpaceCamera";
 import { Planet } from "../Interface/PlanetInterface";
@@ -40,8 +39,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
   const [showPlanetSelector, setShowPlanetSelector] = useState(false);
   const [showControlsHelp, setShowControlsHelp] = useState(false);
 
-  // Format large numbers to be more readable with proper units
-  const formatDistance = (value: number): string => {
+    const formatDistance = (value: number): string => {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(2)} M km`;
     } else if (Math.abs(value) >= 1000) {
@@ -51,15 +49,13 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
     }
   };
 
-  // Get color for speed indicator
-  const getSpeedColor = () => {
+    const getSpeedColor = () => {
     if (speed > 50000) return "text-orange-400";
     if (speed > 10000) return "text-yellow-300";
     return "text-cyan-300";
   };
 
-  // Get text for current mode indicator
-  const getModeText = () => {
+    const getModeText = () => {
     switch (cameraMode) {
       case CameraMode.FREE_FLIGHT:
         return "FREE FLIGHT";
@@ -76,12 +72,11 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
     }
   };
 
-  // Filter system bodies (exclude the Sun for autopilot/warp)
-  const targetablePlanets = planets.filter((p) => p.name !== "Sun");
+    const targetablePlanets = planets.filter((p) => p.name !== "Sun");
 
   return (
     <div className="camera-controls-ui">
-      {/* Main navigation panel */}
+      {}
       <div className="absolute top-16 left-4 game-panel navigation-panel">
         <div className="game-panel-header">
           <div className="game-panel-title">Navigation Control</div>
@@ -96,7 +91,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
         </div>
 
         <div className="game-panel-content">
-          {/* Position display */}
+          {}
           <div className="mb-3">
             <div className="data-label">Current Position</div>
             <div className="grid grid-cols-2 gap-x-2 gap-y-1">
@@ -115,7 +110,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
             </div>
           </div>
 
-          {/* Speed and mode display */}
+          {}
           <div className="mb-3">
             <div className="grid grid-cols-2 gap-x-2 gap-y-1">
               <div className="data-label">Speed:</div>
@@ -127,7 +122,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
             </div>
           </div>
 
-          {/* Target information */}
+          {}
           <div className="mb-3">
             <div className="data-label">Target</div>
             {currentTarget ? (
@@ -154,9 +149,9 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
             )}
           </div>
 
-          {/* Control buttons */}
+          {}
           <div className="space-y-2">
-            {/* Mode selection */}
+            {}
             <div className="flex space-x-2">
               <button
                 onClick={() => onSetCameraMode(CameraMode.FREE_FLIGHT)}
@@ -192,7 +187,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
               )}
             </div>
 
-            {/* Autopilot and warp controls */}
+            {}
             {currentTarget && (
               <div className="flex space-x-2">
                 <button
@@ -225,7 +220,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
               </div>
             )}
 
-            {/* Planet selector toggle */}
+            {}
             <button
               onClick={() => setShowPlanetSelector(!showPlanetSelector)}
               className="game-button w-full"
@@ -235,7 +230,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
                 : "Choose Destination"}
             </button>
 
-            {/* Controls help toggle */}
+            {}
             <button
               onClick={() => setShowControlsHelp(!showControlsHelp)}
               className="game-button w-full"
@@ -245,7 +240,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
           </div>
         </div>
 
-        {/* Panel footer */}
+        {}
         <div className="game-panel-footer">
           {cameraMode === CameraMode.AUTOPILOT && (
             <div>
@@ -281,7 +276,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
         </div>
       </div>
 
-      {/* Planet selector panel */}
+      {}
       {showPlanetSelector && (
         <div className="absolute top-20 left-64 game-panel planet-selector-panel">
           <div className="game-panel-header">
@@ -340,7 +335,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
         </div>
       )}
 
-      {/* Controls help panel */}
+      {}
       {showControlsHelp && (
         <div className="absolute top-20 right-4 game-panel controls-help-panel">
           <div className="game-panel-header">
@@ -394,7 +389,7 @@ const CameraControlsUI: React.FC<CameraControlsUIProps> = ({
         </div>
       )}
 
-      {/* Central autopilot/warp status indicator */}
+      {}
       {(cameraMode === CameraMode.AUTOPILOT ||
         cameraMode === CameraMode.WARPING) && (
         <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">

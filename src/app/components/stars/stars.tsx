@@ -38,10 +38,7 @@ class Stars {
     const positions = [];
     const spread = 100000000000000;
     for (let i = 0; i < 1000; i++) {
-      positions.push(THREE.MathUtils.randFloatSpread(spread)); // x
-      positions.push(THREE.MathUtils.randFloatSpread(spread)); // y
-      positions.push(THREE.MathUtils.randFloatSpread(spread)); // z
-    }
+      positions.push(THREE.MathUtils.randFloatSpread(spread));       positions.push(THREE.MathUtils.randFloatSpread(spread));       positions.push(THREE.MathUtils.randFloatSpread(spread));     }
 
     starsGeometry.setAttribute(
       "position",

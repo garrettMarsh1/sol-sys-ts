@@ -1,4 +1,3 @@
-// src/app/components/UI/NavigationControls.tsx
 import React from "react";
 
 interface NavigationControlsProps {

@@ -1,6 +1,6 @@
-/* src/app/components/UI/HolographicUI.css */
 
-/* Cockpit interface container */
+
+
 .cockpit-interface {
     position: fixed;
     top: 0;
@@ -11,12 +11,12 @@
     z-index: 10;
   }
   
-  /* Allow pointer events on children but not the container */
+  
   .cockpit-interface * {
     pointer-events: auto;
   }
   
-  /* Cockpit frame and controls */
+  
   .cockpit-frame {
     position: fixed;
     top: 0;
@@ -27,7 +27,7 @@
     pointer-events: none;
   }
   
-  /* Cockpit side controls (left and right) */
+  
   .cockpit-controls-left,
   .cockpit-controls-right {
     position: absolute;
@@ -47,7 +47,7 @@
     right: 15px;
   }
   
-  /* Cockpit button styling */
+  
   .cockpit-button {
     width: 70px;
     height: 70px;
@@ -106,7 +106,7 @@
     box-shadow: 0 0 25px rgba(96, 223, 255, 0.7);
   }
   
-  /* Panel container positioning and styling */
+  
   .panel-container {
     position: fixed;
     z-index: 20;
@@ -144,12 +144,12 @@
     max-height: 70vh;
   }
   
-  /* Panel offset positions for staggering */
+  
   .panel-offset-1 {
     top: 170px;
   }
   
-  /* Holographic effect for panels */
+  
   .hologram-effect {
     background: rgba(8, 15, 40, 0.85);
     backdrop-filter: blur(10px);
@@ -193,7 +193,7 @@
     pointer-events: none;
   }
   
-  /* Scanning animation */
+  
   @keyframes scan-line {
     0% {
       top: 0;
@@ -203,7 +203,7 @@
     }
   }
   
-  /* Panel header and content */
+  
   .panel-header {
     background: linear-gradient(90deg, 
       rgba(14, 30, 70, 0.8) 0%, 
@@ -266,7 +266,7 @@
     border-radius: 3px;
   }
   
-  /* Specific styles for planet info panel */
+  
   .planet-info-panel {
     overflow: visible;
   }
@@ -276,7 +276,7 @@
     overflow-y: auto;
   }
   
-  /* Animation classes for panel transitions */
+  
   .panel-slide-left-enter {
     opacity: 0;
     transform: translateX(-50px);
@@ -387,7 +387,7 @@
     transition: opacity 300ms, transform 300ms;
   }
   
-  /* Improved targeting reticle */
+  
   .targeting-reticle {
     position: fixed;
     top: 50%;
@@ -470,7 +470,7 @@
     }
   }
   
-  /* Cockpit center controls */
+  
   .cockpit-center-controls {
     position: fixed;
     top: 50%;
@@ -480,7 +480,7 @@
     z-index: 5;
   }
   
-  /* Status indicators at top */
+  
   .status-bar {
     position: fixed;
     top: 20px;

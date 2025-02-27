@@ -25,7 +25,6 @@ import GameHUD from "./UI/GameHud";
 import { Planet } from "./Interface/PlanetInterface";
 import TrajectoryVisualization from "./Camera/TrajectoryVisualization";
 
-// Physics system imports
 import SolarSystemManager from "./Physics/SolarSystemManager";
 import OrbitalMechanics from "./Physics/OrbitalMechanics";
 import AstronomicalTime from "./Physics/AstronomicalTime";
@@ -211,11 +210,9 @@ class MainSceneWithAdvancedCamera {
   private animationFrameId: number | null = null;
   private debug: boolean = false;
 
-  // Add solar system manager
-  private solarSystemManager: SolarSystemManager | null = null;
+    private solarSystemManager: SolarSystemManager | null = null;
 
-  // Add physics simulation options
-  private useKeplerianOrbits: boolean = true;
+    private useKeplerianOrbits: boolean = true;
   private useNBodyPhysics: boolean = false;
   private useRelativisticEffects: boolean = true;
   private showOrbits: boolean = false;
@@ -412,18 +409,15 @@ class MainSceneWithAdvancedCamera {
     ];
 
     try {
-      // Initialize the solar system manager
-      this.solarSystemManager = new SolarSystemManager(this.scene);
+            this.solarSystemManager = new SolarSystemManager(this.scene);
 
-      // Configure physics options
-      this.solarSystemManager.setPhysicsModel(this.useNBodyPhysics);
+            this.solarSystemManager.setPhysicsModel(this.useNBodyPhysics);
       this.solarSystemManager.setRelativisticEffects(
         this.useRelativisticEffects
       );
       this.solarSystemManager.setShowOrbits(this.showOrbits);
 
-      // Create planets and add them to the manager
-      this.planets = planetClasses.map((PlanetClass) => {
+            this.planets = planetClasses.map((PlanetClass) => {
         if (this.debug) console.log(`Creating planet: ${PlanetClass.name}`);
 
         const planet = new PlanetClass(this.renderer, this.scene, this.camera);
@@ -438,8 +432,7 @@ class MainSceneWithAdvancedCamera {
           planet.mesh.renderOrder = 0;
         }
 
-        // Add to the solar system manager
-        this.solarSystemManager?.addPlanet(planet);
+                this.solarSystemManager?.addPlanet(planet);
 
         if (this.debug)
           console.log(`Planet ${planet.name} created at`, planet.position);
@@ -451,8 +444,7 @@ class MainSceneWithAdvancedCamera {
         };
       });
 
-      // Start sending date updates to UI
-      this.updateDateDisplay();
+            this.updateDateDisplay();
 
       if (this.debug) console.log("Planets setup complete");
     } catch (error) {
@@ -461,13 +453,11 @@ class MainSceneWithAdvancedCamera {
   }
 
   private updateDateDisplay() {
-    // Update date display every second
-    if (this.solarSystemManager) {
+        if (this.solarSystemManager) {
       const dateStr = this.solarSystemManager.getFormattedDate();
       this.callbacks.onDateUpdate(dateStr);
 
-      // Schedule next update
-      setTimeout(() => this.updateDateDisplay(), 1000);
+            setTimeout(() => this.updateDateDisplay(), 1000);
     }
   }
 
@@ -531,16 +521,12 @@ class MainSceneWithAdvancedCamera {
       this.lastFrameTime = currentTime;
 
       if (this.timeScale !== 0) {
-        // Use the solar system manager to update all planets
-        if (this.solarSystemManager) {
-          // Scale time with the time scale factor
-          this.solarSystemManager.setTimeScale(this.timeScale);
+                if (this.solarSystemManager) {
+                    this.solarSystemManager.setTimeScale(this.timeScale);
 
-          // Update the entire solar system
-          this.solarSystemManager.update(currentTime);
+                    this.solarSystemManager.update(currentTime);
         } else {
-          // Fallback to the old update method if manager is not available
-          const scaledDelta = deltaTime * this.timeScale;
+                    const scaledDelta = deltaTime * this.timeScale;
           this.planets.forEach((planet) => planet.update(scaledDelta));
         }
       }
@@ -577,8 +563,7 @@ class MainSceneWithAdvancedCamera {
     } catch (error) {
       console.error("Error in animation loop:", error);
     }
-    //log planet parent positoon and mesh position of earth
-    if (this.debug) {
+        if (this.debug) {
       const earth = this.planets.find((p) => p.object.name === "Earth");
       if (earth) {
         console.log(
@@ -587,8 +572,7 @@ class MainSceneWithAdvancedCamera {
         console.log(
           `Earth mesh position: ${earth.mesh.position.x}, ${earth.mesh.position.y}, ${earth.mesh.position.z}`
         );
-        //console log parent position
-        console.log(
+                console.log(
           `Earth parent position: ${earth.mesh.parent?.position.x}, ${earth.mesh.parent?.position.y}, ${earth.mesh.parent?.position.z}`
         );
       }
@@ -834,8 +818,7 @@ class MainSceneWithAdvancedCamera {
     }
   }
 
-  // Physics control methods
-  public setPhysicsModel(useNBodyPhysics: boolean): void {
+    public setPhysicsModel(useNBodyPhysics: boolean): void {
     this.useNBodyPhysics = useNBodyPhysics;
     this.useKeplerianOrbits = !useNBodyPhysics;
 
@@ -860,8 +843,7 @@ class MainSceneWithAdvancedCamera {
     }
   }
 
-  // Date management methods
-  public setDate(date: Date): void {
+    public setDate(date: Date): void {
     if (this.solarSystemManager) {
       this.solarSystemManager.setDate(date);
     }
@@ -892,19 +874,16 @@ class MainSceneWithAdvancedCamera {
       this.trajectoryVisualization.dispose();
     }
 
-    // Dispose the solar system manager
-    if (this.solarSystemManager) {
+        if (this.solarSystemManager) {
       this.solarSystemManager.dispose();
       this.solarSystemManager = null;
     }
 
-    // Dispose stars if they have a dispose method
-    if (this.stars && typeof (this.stars as any).dispose === "function") {
+        if (this.stars && typeof (this.stars as any).dispose === "function") {
       (this.stars as any).dispose();
     }
 
-    // Dispose post-processing composers and their render targets
-    if (this.normalComposer) {
+        if (this.normalComposer) {
       if (this.normalComposer.renderTarget1)
         this.normalComposer.renderTarget1.dispose();
       if (this.normalComposer.renderTarget2)
@@ -917,8 +896,7 @@ class MainSceneWithAdvancedCamera {
         this.bloomComposer.renderTarget2.dispose();
     }
 
-    // Traverse and dispose all scene objects
-    this.scene.traverse((child) => {
+        this.scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         if (mesh.geometry) mesh.geometry.dispose();
@@ -932,14 +910,12 @@ class MainSceneWithAdvancedCamera {
       }
     });
 
-    // Dispose the renderer
-    if (this.renderer && this.container.contains(this.renderer.domElement)) {
+        if (this.renderer && this.container.contains(this.renderer.domElement)) {
       this.container.removeChild(this.renderer.domElement);
       this.renderer.dispose();
     }
 
-    // Remove any remaining TWEEN animations
-    TWEEN.removeAll();
+        TWEEN.removeAll();
 
     this.isInitialized = false;
   }

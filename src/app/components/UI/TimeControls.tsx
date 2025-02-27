@@ -1,4 +1,3 @@
-// src/app/components/UI/TimeControls.tsx with astronomy & physics integration
 import React, { useState, useEffect } from "react";
 
 interface TimeControlsProps {
@@ -35,11 +34,9 @@ const TimeControls: React.FC<TimeControlsProps> = ({
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [showPhysicsSettings, setShowPhysicsSettings] = useState(false);
 
-  // For date selection
-  const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Format for date input
-  const toLocalISOString = (date: Date) => {
+    const toLocalISOString = (date: Date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -49,8 +46,7 @@ const TimeControls: React.FC<TimeControlsProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  // Parse current date string to maintain selected date
-  useEffect(() => {
+    useEffect(() => {
     if (currentDate) {
       try {
         setSelectedDate(new Date(currentDate));
@@ -60,15 +56,13 @@ const TimeControls: React.FC<TimeControlsProps> = ({
     }
   }, [currentDate]);
 
-  // Get appropriate class for time scale
-  const getTimeScaleClass = () => {
+    const getTimeScaleClass = () => {
     if (timeScale === 0) return "text-red-400";
     if (timeScale > 1000) return "text-yellow-300";
     return "text-cyan-300";
   };
 
-  // Apply selected date
-  const handleApplyDate = () => {
+    const handleApplyDate = () => {
     onSetDate(selectedDate);
     setShowDateSelector(false);
   };
@@ -95,7 +89,7 @@ const TimeControls: React.FC<TimeControlsProps> = ({
             {showDateSelector ? "Cancel Date Selection" : "Set Date"}
           </button>
 
-          {/* Date selector */}
+          {}
           {showDateSelector && (
             <div className="mt-2 p-2 border border-blue-900 rounded">
               <input
@@ -187,7 +181,7 @@ const TimeControls: React.FC<TimeControlsProps> = ({
           )}
         </div>
 
-        {/* Physics settings section */}
+        {}
         <div className="mt-4 pt-3 border-t border-blue-900">
           <div className="flex items-center mb-2">
             <div className="data-label flex-1">Physics Settings</div>
@@ -227,7 +221,7 @@ const TimeControls: React.FC<TimeControlsProps> = ({
             </div>
           </div>
 
-          {/* Additional physics explanation */}
+          {}
           {showPhysicsSettings && (
             <div className="mt-3 p-2 border border-blue-900 rounded bg-blue-900/20">
               <div className="text-xs text-cyan-300 mb-1">

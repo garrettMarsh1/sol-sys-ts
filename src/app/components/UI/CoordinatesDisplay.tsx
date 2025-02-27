@@ -1,4 +1,3 @@
-// src/app/components/UI/CoordinatesDisplay.tsx
 import React, { useState, useEffect } from "react";
 
 interface CoordinatesDisplayProps {
@@ -16,16 +15,14 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
 }) => {
   const [animatedVelocity, setAnimatedVelocity] = useState(0);
 
-  // Animate velocity changes for smoother display
-  useEffect(() => {
+    useEffect(() => {
     setAnimatedVelocity((prev) => {
       const diff = velocity - prev;
       return prev + diff * 0.1;
     });
   }, [velocity]);
 
-  // Format large numbers to be more readable with proper units
-  const formatDistance = (value: number): string => {
+    const formatDistance = (value: number): string => {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(2)} M`;
     } else if (Math.abs(value) >= 1000) {
@@ -35,15 +32,13 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
     }
   };
 
-  // Calculate velocity color based on speed
-  const getVelocityColor = () => {
+    const getVelocityColor = () => {
     if (animatedVelocity > 100) return "text-orange-400";
     if (animatedVelocity > 50) return "text-yellow-300";
     return "text-cyan-300";
   };
 
-  // Calculate target status
-  const getTargetStatus = () => {
+    const getTargetStatus = () => {
     if (!currentPlanet) return "No Target";
     if (targetDistance && targetDistance < 100000) return "Proximity";
     return "Tracking";
@@ -121,7 +116,7 @@ const CoordinatesDisplay: React.FC<CoordinatesDisplayProps> = ({
         )}
       </div>
 
-      {/* Add a scan line effect */}
+      {}
       <div className="holographic-scanline"></div>
     </div>
   );

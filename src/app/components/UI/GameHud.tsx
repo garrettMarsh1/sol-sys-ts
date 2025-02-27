@@ -1,4 +1,3 @@
-// Updated GameHUD.tsx with physics system integration
 import React, { useState, useEffect } from "react";
 import PlanetInfoPanel from "./PlanetInfoPanel";
 import CockpitFrame from "./CockpitFrame";
@@ -20,13 +19,11 @@ interface GameHUDProps {
   planets: any[];
   cameraMode: "fps" | "follow" | "orbit";
   rawPlanets: any[];
-  // Additional props from CameraControlsUI
-  autopilotProgress?: number;
+    autopilotProgress?: number;
   warpProgress?: number;
   onStartAutopilot?: () => void;
   onCancelAutopilot?: () => void;
-  // New props for physics system
-  currentDate: string;
+    currentDate: string;
   relativisticEffects: boolean;
   onToggleRelativisticEffects: (enabled: boolean) => void;
   showOrbits: boolean;
@@ -50,50 +47,40 @@ const GameHUD: React.FC<GameHUDProps> = ({
   warpProgress = 0,
   onStartAutopilot = () => {},
   onCancelAutopilot = () => {},
-  // New physics props
-  currentDate = "",
+    currentDate = "",
   relativisticEffects = true,
   onToggleRelativisticEffects = () => {},
   showOrbits = false,
   onToggleShowOrbits = () => {},
   onSetDate = () => {},
 }) => {
-  // State for help panel visibility
-  const [showHelp, setShowHelp] = useState(false);
+    const [showHelp, setShowHelp] = useState(false);
   const [showDestinationSelector, setShowDestinationSelector] = useState(false);
-  // State for managing selected planet in the map (might be different from currentPlanet)
-  const [mapSelectedPlanet, setMapSelectedPlanet] = useState<any | null>(null);
-  // State to control the planet info panel visibility
-  const [showPlanetInfo, setShowPlanetInfo] = useState(false);
-  // State for physics settings panel
-  const [showPhysicsSettings, setShowPhysicsSettings] = useState(false);
-  // State for date selector
-  const [showDateSelector, setShowDateSelector] = useState(false);
+    const [mapSelectedPlanet, setMapSelectedPlanet] = useState<any | null>(null);
+    const [showPlanetInfo, setShowPlanetInfo] = useState(false);
+    const [showPhysicsSettings, setShowPhysicsSettings] = useState(false);
+    const [showDateSelector, setShowDateSelector] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Set the mapSelectedPlanet when currentPlanet changes
-  useEffect(() => {
+    useEffect(() => {
     if (currentPlanet) {
       setMapSelectedPlanet(currentPlanet);
     }
   }, [currentPlanet]);
 
-  // Handle planet selection from the map
-  const handleSelectPlanet = (planet: any) => {
+    const handleSelectPlanet = (planet: any) => {
     console.log("Planet selected from map:", planet.name);
     setMapSelectedPlanet(planet);
     setShowPlanetInfo(true);
   };
 
-  // Speed calculation
-  const velocityMagnitude = Math.sqrt(
+    const velocityMagnitude = Math.sqrt(
     cameraVelocity.x * cameraVelocity.x +
       cameraVelocity.y * cameraVelocity.y +
       cameraVelocity.z * cameraVelocity.z
   );
 
-  // Helper function to format distance
-  function formatDistance(value: number): string {
+    function formatDistance(value: number): string {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(2)} M`;
     } else if (Math.abs(value) >= 1000) {
@@ -103,8 +90,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     }
   }
 
-  // Helper function to calculate target distance
-  function calculateTargetDistance(): number {
+    function calculateTargetDistance(): number {
     if (!currentPlanet) return 0;
     return Math.sqrt(
       Math.pow(cameraPosition.x - currentPlanet.position.x, 2) +
@@ -113,14 +99,12 @@ const GameHUD: React.FC<GameHUDProps> = ({
     );
   }
 
-  // Apply selected date
-  const handleApplyDate = () => {
+    const handleApplyDate = () => {
     onSetDate(selectedDate);
     setShowDateSelector(false);
   };
 
-  // Navigation Controls Panel
-  const navigationPanel = (
+    const navigationPanel = (
     <div className="navigation-panel-content">
       <div className="mb-3">
         <div className="data-label mb-2">Navigation Mode</div>
@@ -184,18 +168,15 @@ const GameHUD: React.FC<GameHUDProps> = ({
                 autopilotProgress > 0
                   ? onCancelAutopilot
                   : () => {
-                      // Use either currentPlanet or mapSelectedPlanet
-                      const targetPlanet = currentPlanet || mapSelectedPlanet;
+                                            const targetPlanet = currentPlanet || mapSelectedPlanet;
                       if (targetPlanet) {
-                        // First set the planet as target if it's not the current target
-                        if (
+                                                if (
                           !currentPlanet ||
                           currentPlanet.name !== targetPlanet.name
                         ) {
                           onFollowPlanet(targetPlanet.name);
                         }
-                        // Then start autopilot
-                        onStartAutopilot();
+                                                onStartAutopilot();
                       }
                     }
               }
@@ -212,8 +193,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
             </button>
             <button
               onClick={() => {
-                // Use either currentPlanet or mapSelectedPlanet
-                const targetPlanet = currentPlanet || mapSelectedPlanet;
+                                const targetPlanet = currentPlanet || mapSelectedPlanet;
                 if (targetPlanet) {
                   onWarpToPlanet(targetPlanet.name);
                 }
@@ -283,8 +263,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );
 
-  // Coordinates Panel
-  const coordinatesPanel = (
+    const coordinatesPanel = (
     <div className="coordinates-panel-content">
       <div className="mb-3">
         <div className="data-label">Position</div>
@@ -349,8 +328,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );
 
-  // Planet Selector Panel
-  const planetSelectorPanel = (
+    const planetSelectorPanel = (
     <div className="planet-selector-content">
       <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto pr-2">
         {planets
@@ -407,8 +385,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );
 
-  // Map Panel - Now correctly uses the HolographicMiniMap component
-  const mapPanel = (
+    const mapPanel = (
     <div className="map-panel-content">
       <div
         className="holographic-map-container"
@@ -443,11 +420,9 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );
 
-  // Time Controls Panel
-  const [showTimeControls, setShowTimeControls] = useState(false);
+    const [showTimeControls, setShowTimeControls] = useState(false);
 
-  // Get appropriate class for time scale
-  const getTimeScaleClass = () => {
+    const getTimeScaleClass = () => {
     if (timeScale === 0) return "text-red-400";
     if (timeScale > 1000) return "text-yellow-300";
     return "text-cyan-300";
@@ -581,7 +556,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
         )}
       </div>
 
-      {/* Physics system controls */}
+      {}
       <div className="mt-4 pt-3 border-t border-blue-900">
         <div className="data-label">Physics Settings</div>
         <div className="mt-2">
@@ -648,8 +623,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     </div>
   );
 
-  // Planet Info Panel
-  const planetInfoPanel = mapSelectedPlanet && (
+    const planetInfoPanel = mapSelectedPlanet && (
     <PlanetInfoPanel
       planet={mapSelectedPlanet}
       onClose={() => setShowPlanetInfo(false)}
@@ -658,8 +632,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
     />
   );
 
-  // Help/Controls Panel
-  const controlsPanel = (
+    const controlsPanel = (
     <div className="controls-panel-content">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="hologram-panel-dark p-4">
@@ -717,7 +690,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
         </div>
       </div>
 
-      {/* Add Physics information section */}
+      {}
       <div className="hologram-panel-dark p-4 mt-4">
         <h3 className="text-lg text-cyan-300 mb-3">Physics Simulation</h3>
         <div className="space-y-2 text-sm">
@@ -761,10 +734,10 @@ const GameHUD: React.FC<GameHUDProps> = ({
         controlsPanel={controlsPanel}
         destinationPanel={planetSelectorPanel}
       >
-        {/* Add cockpit frame with ship controls */}
+        {}
         <CockpitFrame cameraVelocity={cameraVelocity} />
 
-        {/* Help button - floating in bottom center */}
+        {}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
           <button
             onClick={() => setShowHelp(!showHelp)}
@@ -774,7 +747,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
           </button>
         </div>
 
-        {/* Central autopilot/warp status indicator */}
+        {}
         {(autopilotProgress > 0 || warpProgress > 0) && (
           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
             <div
@@ -809,7 +782,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
           </div>
         )}
 
-        {/* Destination Selector Modal */}
+        {}
         {showDestinationSelector && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="game-panel w-96 max-h-[80vh]">
@@ -832,7 +805,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
           </div>
         )}
 
-        {/* Planet Info Modal */}
+        {}
         {showPlanetInfo && mapSelectedPlanet && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="game-panel w-[700px] max-h-[80vh]">

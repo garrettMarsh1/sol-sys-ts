@@ -102,18 +102,13 @@ export default class FirstPersonCamera {
     );
   }
 
-  // Modify the update method in FirstPersonCamera class
+  
+    public setWarping(isWarping: boolean): void {
+        (this as any).isWarping = isWarping;
 
-  // Add this method to your FirstPersonCamera class
-  public setWarping(isWarping: boolean): void {
-    // Store warping state in a local property
-    (this as any).isWarping = isWarping;
+        (window as any).isWarping = isWarping;
 
-    // Also set a global flag for other components that might need to know
-    (window as any).isWarping = isWarping;
-
-    // If warping is enabled, immediately stop any velocity
-    if (isWarping) {
+        if (isWarping) {
       this.resetVelocity();
     }
   }
@@ -122,10 +117,8 @@ export default class FirstPersonCamera {
     return this.rotation_.clone();
   }
 
-  // Then modify your update method to check for this flag:
-  update(timeElapsedS: number) {
-    // Skip updates if we're being controlled externally through warping
-    if ((this as any).isWarping || (window as any).isWarping) {
+    update(timeElapsedS: number) {
+        if ((this as any).isWarping || (window as any).isWarping) {
       return;
     }
 
@@ -146,44 +139,31 @@ export default class FirstPersonCamera {
   }
 
   private updateInput_() {
-    // Check for boost
-    this.useBoost_ = this.input_.key(KEYS.shift);
+        this.useBoost_ = this.input_.key(KEYS.shift);
 
-    // Update zoom with mouse wheel
-    // Note: This would require extending the InputController to track wheel events
-  }
+          }
 
   private updateFollowMode_(timeElapsedS: number) {
     if (!this.target) return;
 
-    // Get target position
-    const targetPosition = this.target.position.clone();
+        const targetPosition = this.target.position.clone();
 
-    // Calculate appropriate follow distance based on target size
-    // If the target has a diameter property, use it to scale the distance
-    let followDistance = this.currentZoomDistance_;
+            let followDistance = this.currentZoomDistance_;
     if (this.target.userData && this.target.userData.diameter) {
-      // Scale distance based on diameter
-      followDistance = this.target.userData.diameter * 3;
+            followDistance = this.target.userData.diameter * 3;
     } else if (this.target.userData && this.target.userData.radius) {
-      // Scale distance based on radius
-      followDistance = this.target.userData.radius * 6;
+            followDistance = this.target.userData.radius * 6;
     }
 
-    // Create an offset vector behind and slightly above the target
-    const offset = new THREE.Vector3(0, followDistance * 0.2, followDistance);
+        const offset = new THREE.Vector3(0, followDistance * 0.2, followDistance);
 
-    // Apply camera rotation to the offset
-    offset.applyQuaternion(this.rotation_);
+        offset.applyQuaternion(this.rotation_);
 
-    // Calculate the desired camera position
-    const desiredPosition = targetPosition.clone().add(offset);
+        const desiredPosition = targetPosition.clone().add(offset);
 
-    // Smoothly move camera to the desired position
-    this.translation_.lerp(desiredPosition, 0.05);
+        this.translation_.lerp(desiredPosition, 0.05);
 
-    // Always look at the target
-    this.camera.lookAt(targetPosition);
+        this.camera.lookAt(targetPosition);
   }
 
   public resetVelocity() {
@@ -195,36 +175,28 @@ export default class FirstPersonCamera {
 
     const targetPosition = this.target.position.clone();
 
-    // Determine appropriate orbit distance based on target size
-    let orbitDistance = this.currentZoomDistance_;
+        let orbitDistance = this.currentZoomDistance_;
     if (this.target.userData && this.target.userData.diameter) {
       orbitDistance = this.target.userData.diameter * 2;
     } else if (this.target.userData && this.target.userData.radius) {
       orbitDistance = this.target.userData.radius * 4;
     }
 
-    // Update orbit angle with dynamic speed
-    // Smaller targets should have faster orbit speeds
-    const baseOrbitSpeed = this.orbitSpeed_;
+            const baseOrbitSpeed = this.orbitSpeed_;
     const scaleFactor =
       orbitDistance > 50000 ? 0.5 : orbitDistance > 10000 ? 1.0 : 2.0;
     const adjustedSpeed = baseOrbitSpeed * scaleFactor;
 
     this.orbitAngle_ += adjustedSpeed * timeElapsedS;
 
-    // Calculate position on orbit ellipse
-    // Use slight vertical offset for better viewing angle
-    const x = targetPosition.x + Math.cos(this.orbitAngle_) * orbitDistance;
+            const x = targetPosition.x + Math.cos(this.orbitAngle_) * orbitDistance;
     const z = targetPosition.z + Math.sin(this.orbitAngle_) * orbitDistance;
-    const y = targetPosition.y + orbitDistance * 0.25; // Slightly above orbit plane
-
-    // Set position and look at target with smooth transition
-    const currentPos = this.translation_.clone();
+    const y = targetPosition.y + orbitDistance * 0.25; 
+        const currentPos = this.translation_.clone();
     const newPos = new THREE.Vector3(x, y, z);
     this.translation_.lerp(newPos, 0.05);
 
-    // Always look at the target
-    this.camera.lookAt(targetPosition);
+        this.camera.lookAt(targetPosition);
   }
 
   private updateTranslation_(timeElapsedS: number) {
@@ -243,11 +215,9 @@ export default class FirstPersonCamera {
     const rollVelocity =
       (this.input_.key(KEYS.z) ? 1 : 0) + (this.input_.key(KEYS.c) ? -1 : 0);
 
-    // Apply boost if shift is held
-    let speedMultiplier = this.useBoost_ ? this.boostMultiplier_ : 1;
+        let speedMultiplier = this.useBoost_ ? this.boostMultiplier_ : 1;
 
-    // Calculate speed based on distance from origin to simulate a sense of scale
-    const distanceFromOrigin = this.translation_.length();
+        const distanceFromOrigin = this.translation_.length();
     const adaptiveSpeed =
       this.movementSpeed_ * Math.max(1, distanceFromOrigin / 1000000);
     const clampedSpeed = Math.min(adaptiveSpeed, this.maxSpeed_);
@@ -273,23 +243,19 @@ export default class FirstPersonCamera {
     );
     this.rotation_.multiply(roll);
 
-    // Add all movements to velocity
-    this.velocity_.add(forward).add(left).add(up);
+        this.velocity_.add(forward).add(left).add(up);
 
-    // Apply inertia/damping
-    if (this.inertia_) {
+        if (this.inertia_) {
       this.velocity_.multiplyScalar(this.dampingFactor_);
     } else if (
       forwardVelocity === 0 &&
       strafeVelocity === 0 &&
       upVelocity === 0
     ) {
-      // If no input and no inertia, stop immediately
-      this.velocity_.set(0, 0, 0);
+            this.velocity_.set(0, 0, 0);
     }
 
-    // Apply velocity to position
-    this.translation_.add(this.velocity_);
+        this.translation_.add(this.velocity_);
   }
 
   private addEventListeners_() {
@@ -327,32 +293,27 @@ export default class FirstPersonCamera {
 
   private onMouseDown_(event: MouseEvent) {
     if (event.button === 0) {
-      // Left mouse button
-      this.enableMouseLook_ = true;
+            this.enableMouseLook_ = true;
     }
   }
 
   private onMouseUp_(event: MouseEvent) {
     if (event.button === 0) {
-      // Left mouse button
-      this.enableMouseLook_ = false;
+            this.enableMouseLook_ = false;
     }
   }
 
   private onMouseWheel_(event: WheelEvent) {
-    // Zoom in/out when in follow or orbit mode
-    if (
+        if (
       this.following &&
       (this.cameraMode === "follow" || this.cameraMode === "orbit")
     ) {
-      // Delta is positive when scrolling up/away, negative when scrolling down/toward
-      const zoomDelta = event.deltaY * 0.1;
+            const zoomDelta = event.deltaY * 0.1;
       this.adjustZoomDistance(zoomDelta);
     }
   }
 
-  // Get current velocity magnitude (useful for UI)
-  getVelocityMagnitude(): number {
+    getVelocityMagnitude(): number {
     return this.velocity_.length();
   }
 }
