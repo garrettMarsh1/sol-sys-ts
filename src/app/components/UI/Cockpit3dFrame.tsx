@@ -31,8 +31,7 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
   const [shieldStatus, setShieldStatus] = useState(100);
   const [fuelStatus, setFuelStatus] = useState(98);
 
-  // Calculate velocity and set warnings
-  useEffect(() => {
+    useEffect(() => {
     const velocityMagnitude = Math.sqrt(
       cameraVelocity.x * cameraVelocity.x +
       cameraVelocity.y * cameraVelocity.y +
@@ -56,19 +55,18 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
     }
   }, [cameraVelocity]);
 
-  // Check if a panel is active
-  const isPanelActive = (panelType: PanelType): boolean => {
+    const isPanelActive = (panelType: PanelType): boolean => {
     return activePanels.includes(panelType);
   };
 
   return (
     <>
-      {/* Main 3D Cockpit Structure */}
+      {}
       <div className="cockpit-3d-frame">
-        {/* Top Viewport Glass Simulation */}
+        {}
         <div className="cockpit-viewport"></div>
 
-        {/* Top Frame with Status Indicators */}
+        {}
         <div className="cockpit-top-frame">
           <div className="status-display">
             <div className="status-item">
@@ -98,7 +96,7 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
           </div>
         </div>
 
-        {/* Left Side Control Panel */}
+        {}
         <div className="cockpit-side-panel cockpit-side-panel-left">
           <button
             className={`cockpit-3d-button ${
@@ -133,19 +131,10 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
             <span className="cockpit-button-label">Controls</span>
           </button>
 
-          <button
-            className={`cockpit-3d-button ${
-              isPanelActive("destination") ? "cockpit-3d-button-active" : ""
-            }`}
-            onClick={() => onTogglePanel("destination")}
-          >
-            {isPanelActive("destination") && <div className="led-indicator led-active"></div>}
-            <span className="cockpit-button-icon">🚀</span>
-            <span className="cockpit-button-label">Destination</span>
-          </button>
+          {}
         </div>
 
-        {/* Right Side Control Panel */}
+        {}
         <div className="cockpit-side-panel cockpit-side-panel-right">
           <button
             className={`cockpit-3d-button ${
@@ -190,11 +179,11 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
           </button>
         </div>
 
-        {/* Main Dashboard */}
+        {}
         <div className="cockpit-dashboard">
           <div className="dashboard-panels">
             <div className="dashboard-left">
-              {/* Thruster indicators */}
+              {}
               <div className="thruster-bar">
                 <div className="thruster-label">LATERAL</div>
                 <div className="thruster-fill" style={{ width: `${lateralThrust}%` }}></div>
@@ -202,15 +191,8 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
             </div>
             
             <div className="dashboard-center">
-              {/* Central radar and targeting system */}
-              <div className="targeting-reticle">
-                <div className="targeting-reticle-dot" style={{ top: -2, left: -2 }}></div>
-                <div className="targeting-reticle-dot" style={{ top: -2, right: -2 }}></div>
-                <div className="targeting-reticle-dot" style={{ bottom: -2, right: -2 }}></div>
-                <div className="targeting-reticle-dot" style={{ bottom: -2, left: -2 }}></div>
-              </div>
               
-              {/* Autopilot or warp progress display */}
+              {}
               {(autopilotProgress > 0 || warpProgress > 0) && (
                 <div className="progress-display">
                   <div className="progress-label">
@@ -230,7 +212,7 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
             </div>
             
             <div className="dashboard-right">
-              {/* Forward thruster indicator */}
+              {}
               <div className="thruster-bar">
                 <div className="thruster-label">FORWARD</div>
                 <div className="thruster-fill" style={{ width: `${forwardThrust}%` }}></div>
@@ -239,7 +221,7 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
           </div>
         </div>
 
-        {/* 3D Speedometer */}
+        {}
         <div className="speedometer">
           <div 
             className="speedometer-needle"
@@ -251,12 +233,12 @@ const Cockpit3DFrame: React.FC<CockpitFrameProps> = ({
         </div>
       </div>
 
-      {/* Warning display */}
+      {}
       {warning && (
         <div className="hud-warning">{warning}</div>
       )}
 
-      {/* Targeting reticle in the center of screen */}
+      {}
       <div className="targeting-reticle">
         <div className="targeting-reticle-dot"></div>
         <div className="targeting-reticle-dot"></div>

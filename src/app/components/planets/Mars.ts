@@ -3,18 +3,37 @@ import { textureLoader } from "../../Utils/TextureLoader";
 import { BasePlanet } from "./BasePlanet";
 
 class Mars extends BasePlanet {
-    public name: string = "Mars";
+  public name: string = "Mars";
 
-    public mass: number = 6.39e23;   public radius: number = 3396;   public diameter: number = 6792;   public density: number = 3933;   public gravity: number = 3.711;   public escapeVelocity: number = 5.03; 
-    public rotationPeriod: number = 1.025;   public lengthOfDay: number = 24.7;   public obliquityToOrbit: number = 25.19; 
-    public distanceFromSun: number = 227936640;   public perihelion: number = 206700000;   public aphelion: number = 249200000;   public semiMajorAxis: number = 227936640;   public semiMinorAxis: number = 226936000;   public eccentricity: number = 0.0934;   public orbitalPeriod: number = 686.98;   public orbitalVelocity: number = 24.13;   public orbitalInclination: number = 1.85;   public orbitalEccentricity: number = 0.0934; 
-    public longitudeOfAscendingNode: number = 49.58;   public argumentOfPerihelion: number = 286.5; 
-    public meanTemperature: number = 210;   public surfaceTemperature: number = 210;   public surfacePressure: number = 0.006; 
-    public numberOfMoons: number = 2;
+  public mass: number = 6.39e23;
+  public radius: number = 3396;
+  public diameter: number = 6792;
+  public density: number = 3933;
+  public gravity: number = 3.711;
+  public escapeVelocity: number = 5.03;
+  public rotationPeriod: number = 1.025;
+  public lengthOfDay: number = 24.7;
+  public obliquityToOrbit: number = 25.19;
+  public distanceFromSun: number = 227936640;
+  public perihelion: number = 206700000;
+  public aphelion: number = 249200000;
+  public semiMajorAxis: number = 227936640;
+  public semiMinorAxis: number = 226936000;
+  public eccentricity: number = 0.0934;
+  public orbitalPeriod: number = 686.98;
+  public orbitalVelocity: number = 24.13;
+  public orbitalInclination: number = 1.85;
+  public orbitalEccentricity: number = 0.0934;
+  public longitudeOfAscendingNode: number = 49.58;
+  public argumentOfPerihelion: number = 286.5;
+  public meanTemperature: number = 210;
+  public surfaceTemperature: number = 210;
+  public surfacePressure: number = 0.006;
+  public numberOfMoons: number = 2;
   public hasRingSystem: boolean = false;
   public hasGlobalMagneticField: boolean = true;
-  public centralBody: number = 1.989e30; 
-    public texture: THREE.Texture;
+  public centralBody: number = 1.989e30;
+  public texture: THREE.Texture;
 
   constructor(
     renderer: THREE.WebGLRenderer,
@@ -23,11 +42,11 @@ class Mars extends BasePlanet {
   ) {
     super(renderer, scene, camera);
 
-        this.texture = textureLoader.load("/assets/images/mars.jpeg");
+    this.texture = textureLoader.load("/assets/images/mars.jpeg");
 
         this.initialize();
 
-        this.hasRelativisticPrecession = true;
+    this.hasRelativisticPrecession = true;
 
     console.log(
       `Created ${this.name} planet with advanced physics at:`,
@@ -35,11 +54,19 @@ class Mars extends BasePlanet {
     );
   }
 
-  
+    protected updateRotation(dt: number): void {
+    const rotationPeriodSeconds = this.rotationPeriod * 86400;     const rotationSpeed = (2 * Math.PI) / rotationPeriodSeconds;
+
+        this.mesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), rotationSpeed * dt);
+  }
+
+  public update(dt: number): void {
+        super.update(dt);
+          }
+
   public applyAxialTilt(): void {
     super.applyAxialTilt();
-
-          }
+  }
 }
 
 export default Mars;

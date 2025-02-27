@@ -17,7 +17,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     "overview" | "physical" | "orbital" | "relativity"
   >("overview");
 
-    useEffect(() => {
+  useEffect(() => {
     setActiveTab("overview");
   }, [planet?.name]);
 
@@ -35,14 +35,15 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     }
   };
 
-    const calculatePrecession = (planet: any): string => {
+  const calculatePrecession = (planet: any): string => {
     if (!planet) return "0";
 
-        if (planet.name === "Mercury") {
+    if (planet.name === "Mercury") {
       return "43.0 arcsec/century";
     }
 
-            const semiMajorAxisAU = planet.semiMajorAxis / 149597870.7;     const precession =
+    const semiMajorAxisAU = planet.semiMajorAxis / 149597870.7;
+    const precession =
       43.0 *
       (1 / semiMajorAxisAU) *
       (1 / (1 - planet.eccentricity * planet.eccentricity));
@@ -50,7 +51,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
     return `${precession.toFixed(2)} arcsec/century`;
   };
 
-    const getPlanetColor = (name: string): string => {
+  const getPlanetColor = (name: string): string => {
     switch (name.toLowerCase()) {
       case "sun":
         return "#ffcc00";
@@ -124,7 +125,6 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   backgroundColor: getPlanetColor(planet.name),
                 }}
               >
-                {}
                 {planet.name === "Saturn" && (
                   <div
                     className="absolute inset-0 transform -rotate-12"
@@ -150,7 +150,6 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   </div>
                 )}
 
-                {}
                 {["Earth", "Venus", "Uranus", "Neptune"].includes(
                   planet.name
                 ) && (
@@ -163,7 +162,6 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   ></div>
                 )}
 
-                {}
                 <div
                   className="absolute inset-0 rounded-full overflow-hidden pointer-events-none"
                   style={{ zIndex: 2 }}
@@ -178,7 +176,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
               </div>
             </div>
             <div>
-              <div className="data-label">Classification</div>
+              <div className="data-label">CLASSIFICATION</div>
               <div className="data-value text-lg mb-2">
                 {planet.name === "Sun"
                   ? "G-Type Main Sequence Star"
@@ -192,22 +190,22 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
               </div>
 
               <div className="data-group">
-                <div className="data-label">Key Parameters</div>
+                <div className="data-label">KEY PARAMETERS</div>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1">
                   <div className="text-cyan-400">Diameter:</div>
-                  <div>{formatNumber(planet.diameter)}</div>
+                  <div className="text-white">{formatNumber(planet.diameter)}</div>
 
                   <div className="text-cyan-400">Orbital Distance:</div>
-                  <div>{formatNumber(planet.distanceFromSun)}</div>
+                  <div className="text-white">{formatNumber(planet.distanceFromSun)}</div>
 
                   <div className="text-cyan-400">Rotation Period:</div>
-                  <div>
+                  <div className="text-white">
                     {planet.rotationPeriod || "Unknown"}{" "}
                     {planet.rotationPeriod ? "days" : ""}
                   </div>
 
                   <div className="text-cyan-400">Day Length:</div>
-                  <div>
+                  <div className="text-white">
                     {planet.lengthOfDay || "Unknown"}{" "}
                     {planet.lengthOfDay ? "hours" : ""}
                   </div>
@@ -217,8 +215,8 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
           </div>
 
           <div className="hologram-panel-dark p-3 mb-6 rounded">
-            <div className="data-label mb-1">Planetary Analysis</div>
-            <p className="text-sm leading-relaxed">
+            <div className="data-label mb-1">PLANETARY ANALYSIS</div>
+            <p className="text-white text-sm leading-relaxed">
               {getPlanetDescription(planet.name)}
             </p>
           </div>
@@ -254,29 +252,29 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
         <div className="tab-content physical-tab p-4">
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div className="text-cyan-400">Mass:</div>
-            <div>{formatNumber(planet.mass)} kg</div>
+            <div className="text-white">{formatNumber(planet.mass)} kg</div>
 
             <div className="text-cyan-400">Diameter:</div>
-            <div>{formatNumber(planet.diameter)}</div>
+            <div className="text-white">{formatNumber(planet.diameter)}</div>
 
             <div className="text-cyan-400">Density:</div>
-            <div>
+            <div className="text-white">
               {planet.density || "Unknown"} {planet.density ? "kg/m³" : ""}
             </div>
 
             <div className="text-cyan-400">Surface Gravity:</div>
-            <div>
+            <div className="text-white">
               {planet.gravity || "Unknown"} {planet.gravity ? "m/s²" : ""}
             </div>
 
             <div className="text-cyan-400">Escape Velocity:</div>
-            <div>
+            <div className="text-white">
               {planet.escapeVelocity || "Unknown"}{" "}
               {planet.escapeVelocity ? "km/s" : ""}
             </div>
 
             <div className="text-cyan-400">Surface Temperature:</div>
-            <div>
+            <div className="text-white">
               {planet.meanTemperature || "Unknown"}{" "}
               {planet.meanTemperature ? "K" : ""}
             </div>
@@ -284,7 +282,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
             {(planet.surfacePressure > 0 || planet.name === "Earth") && (
               <>
                 <div className="text-cyan-400">Surface Pressure:</div>
-                <div>
+                <div className="text-white">
                   {planet.surfacePressure || "1 atm"}{" "}
                   {planet.surfacePressure ? "Pa" : ""}
                 </div>
@@ -292,10 +290,10 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
             )}
 
             <div className="text-cyan-400">Number of Moons:</div>
-            <div>{planet.numberOfMoons || "0"}</div>
+            <div className="text-white">{planet.numberOfMoons || "0"}</div>
 
             <div className="text-cyan-400">Ring System:</div>
-            <div>
+            <div className="text-white">
               {planet.name === "Saturn" ||
               planet.name === "Uranus" ||
               planet.name === "Jupiter" ||
@@ -305,7 +303,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
             </div>
 
             <div className="text-cyan-400">Global Magnetic Field:</div>
-            <div>
+            <div className="text-white">
               {["Earth", "Jupiter", "Saturn", "Uranus", "Neptune"].includes(
                 planet.name
               )
@@ -326,8 +324,8 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                           key={element}
                           className="flex justify-between mb-1"
                         >
-                          <span>{element}</span>
-                          <span>
+                          <span className="text-white">{element}</span>
+                          <span className="text-white">
                             {typeof percentage === "number"
                               ? `${percentage.toFixed(1)}%`
                               : percentage}
@@ -359,57 +357,57 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
         <div className="tab-content orbital-tab p-4">
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div className="text-cyan-400">Distance from Sun:</div>
-            <div>{formatNumber(planet.distanceFromSun)}</div>
+            <div className="text-white">{formatNumber(planet.distanceFromSun)}</div>
 
             <div className="text-cyan-400">Perihelion:</div>
-            <div>{formatNumber(planet.perihelion)}</div>
+            <div className="text-white">{formatNumber(planet.perihelion)}</div>
 
             <div className="text-cyan-400">Aphelion:</div>
-            <div>{formatNumber(planet.aphelion)}</div>
+            <div className="text-white">{formatNumber(planet.aphelion)}</div>
 
             <div className="text-cyan-400">Semi-Major Axis:</div>
-            <div>{formatNumber(planet.semiMajorAxis)}</div>
+            <div className="text-white">{formatNumber(planet.semiMajorAxis)}</div>
 
             <div className="text-cyan-400">Semi-Minor Axis:</div>
-            <div>{formatNumber(planet.semiMinorAxis)}</div>
+            <div className="text-white">{formatNumber(planet.semiMinorAxis)}</div>
 
             <div className="text-cyan-400">Orbital Period:</div>
-            <div>
+            <div className="text-white">
               {planet.orbitalPeriod || "Unknown"}{" "}
               {planet.orbitalPeriod ? "days" : ""}
             </div>
 
             <div className="text-cyan-400">Orbital Velocity:</div>
-            <div>
+            <div className="text-white">
               {planet.orbitalVelocity || "Unknown"}{" "}
               {planet.orbitalVelocity ? "km/s" : ""}
             </div>
 
             <div className="text-cyan-400">Orbital Inclination:</div>
-            <div>{planet.orbitalInclination || "0"}°</div>
+            <div className="text-white">{planet.orbitalInclination || "0"}°</div>
 
             <div className="text-cyan-400">Eccentricity:</div>
-            <div>
+            <div className="text-white">
               {planet.eccentricity || planet.orbitalEccentricity || "0"}
             </div>
 
             <div className="text-cyan-400">Longitude of Asc. Node:</div>
-            <div>{planet.longitudeOfAscendingNode || "0"}°</div>
+            <div className="text-white">{planet.longitudeOfAscendingNode || "0"}°</div>
 
             <div className="text-cyan-400">Argument of Perihelion:</div>
-            <div>{planet.argumentOfPerihelion || "0"}°</div>
+            <div className="text-white">{planet.argumentOfPerihelion || "0"}°</div>
 
             <div className="text-cyan-400">Axial Tilt:</div>
-            <div>{planet.obliquityToOrbit || "0"}°</div>
+            <div className="text-white">{planet.obliquityToOrbit || "0"}°</div>
 
             <div className="text-cyan-400">Rotation Period:</div>
-            <div>
+            <div className="text-white">
               {planet.rotationPeriod || "Unknown"}{" "}
               {planet.rotationPeriod ? "days" : ""}
             </div>
 
             <div className="text-cyan-400">Day Length:</div>
-            <div>
+            <div className="text-white">
               {planet.lengthOfDay || "Unknown"}{" "}
               {planet.lengthOfDay ? "hours" : ""}
             </div>
@@ -427,12 +425,11 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
         </div>
       )}
 
-      {}
       {activeTab === "relativity" && (
         <div className="tab-content relativity-tab p-4">
           <div className="hologram-panel-dark p-3 mb-4 rounded">
-            <div className="data-label">Relativistic Effects</div>
-            <p className="text-sm text-white mt-1">
+            <div className="data-label">RELATIVISTIC EFFECTS</div>
+            <p className="text-white text-sm mt-1">
               General Relativity predicts several effects observable in the
               Solar System, including the perihelion precession of planets'
               orbits and time dilation effects near massive objects.
@@ -493,7 +490,7 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
               Relativistic Significance:
             </div>
             <div className="col-span-2 hologram-panel-dark p-2 rounded">
-              <p className="text-sm">
+              <p className="text-white text-sm">
                 {planet.name === "Mercury"
                   ? "Mercury exhibits the largest observable relativistic precession in the Solar System at 43 arcseconds per century, a key historical confirmation of Einstein's General Relativity."
                   : planet.name === "Sun"
@@ -503,8 +500,6 @@ const PlanetInfoPanel: React.FC<PlanetInfoPanelProps> = ({
                   : `${
                       planet.name
                     } experiences relativistic effects, though they're smaller than those observed for Mercury due to ${
-                      planet.name
-                    }'s ${
                       planet.name === "Venus"
                         ? "lower orbit eccentricity"
                         : "greater distance from the Sun"

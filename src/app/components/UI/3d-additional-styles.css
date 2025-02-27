@@ -1,6 +1,6 @@
-/* Additional styling for enhanced dashboard features */
 
-/* Progress display for autopilot/warp */
+
+
 .progress-display {
     position: absolute;
     bottom: 15px;
@@ -19,7 +19,7 @@
     font-weight: bold;
   }
   
-  /* Enhanced Thruster Indicators */
+  
   .thruster-indicators {
     position: absolute;
     bottom: 30px;
@@ -63,7 +63,7 @@
     letter-spacing: 1px;
   }
   
-  /* 3D style controls for panels */
+  
   .hologram-button {
     position: relative;
     background: rgba(14, 30, 70, 0.8);
@@ -97,7 +97,7 @@
                 inset 0 0 5px rgba(0, 0, 0, 0.5);
   }
   
-  /* Enhanced panel transitions */
+  
   .panel-fade-enter {
     opacity: 0;
     transform: translate(-50%, -40%) scale(0.95);
@@ -120,7 +120,39 @@
     transition: opacity 300ms, transform 300ms;
   }
   
-  /* Enhanced inner panel design */
+  
+  .compact-panel {
+    max-width: 280px !important;
+    max-height: 60vh !important;
+  }
+  
+  .compact-panel .panel-content {
+    max-height: 50vh;
+    font-size: 0.9rem;
+  }
+  
+  
+  .panel-container .hologram-effect {
+    max-height: 60vh;
+  }
+  
+  
+  .main-reticle {
+    z-index: 100; 
+  }
+  
+  .dashboard-center .targeting-reticle {
+    width: 40px !important;
+    height: 40px !important;
+    position: relative !important;
+    left: unset !important;
+    right: unset !important;
+    top: unset !important;
+    bottom: unset !important;
+    transform: none !important;
+  }
+  
+  
   .panel-content {
     padding: 15px;
     background: linear-gradient(180deg, 
@@ -134,7 +166,7 @@
     scrollbar-color: rgba(64, 153, 255, 0.5) rgba(8, 15, 40, 0.4);
   }
   
-  /* Enhanced data display styles */
+  
   .data-label {
     color: #8ab4f8;
     font-size: 11px;
@@ -150,7 +182,7 @@
     text-shadow: 0 0 8px rgba(224, 242, 255, 0.3);
   }
   
-  /* Add circuit board pattern to panels */
+  
   .hologram-effect::before {
     content: '';
     position: absolute;
@@ -169,7 +201,7 @@
     z-index: 1;
   }
   
-  /* Power-up animation for buttons */
+  
   @keyframes power-up {
     0% {
       opacity: 0.3;
@@ -189,7 +221,7 @@
     animation: power-up 2s infinite;
   }
   
-  /* Cockpit shake effect for high speeds or impacts */
+  
   @keyframes cockpit-shake {
     0% { transform: translate(0, 0) rotate(0); }
     10% { transform: translate(-1px, -1px) rotate(-0.5deg); }
@@ -208,7 +240,7 @@
     animation: cockpit-shake 0.5s infinite;
   }
   
-  /* Glass reflections */
+  
   .glass-reflection {
     position: absolute;
     top: 0;
@@ -220,7 +252,7 @@
     z-index: 1;
   }
   
-  /* Enhanced dashboard elements */
+  
   .dashboard-center {
     position: relative;
     display: flex;
@@ -229,7 +261,7 @@
     justify-content: space-between;
   }
   
-  /* 3D data grid styling */
+  
   .data-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -243,7 +275,7 @@
     transform-origin: center bottom;
   }
   
-  /* Screen glow effect */
+  
   .screen-glow {
     position: absolute;
     top: 0;
@@ -256,7 +288,7 @@
     opacity: 0.5;
   }
   
-  /* Flicker animation for damaged systems */
+  
   @keyframes flicker {
     0% { opacity: 1; }
     5% { opacity: 0.8; }
@@ -275,11 +307,11 @@
     animation: flicker 3s infinite;
   }
   
-  /* Enhanced targeting system */
-  .targeting-system {
+  
+  .radar-display {
     position: relative;
-    width: 150px;
-    height: 150px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: rgba(8, 15, 40, 0.7);
     border: 1px solid rgba(64, 153, 255, 0.6);
@@ -291,15 +323,34 @@
   
   .radar-sweep {
     position: absolute;
-    width: 75px;
-    height: 75px;
+    width: 30px;
+    height: 30px;
     background: linear-gradient(to right, 
       rgba(64, 153, 255, 0.8) 0%, 
       rgba(64, 153, 255, 0) 100%);
     transform-origin: bottom right;
     animation: sweep 4s infinite linear;
     opacity: 0.7;
-    border-radius: 75px 0 0 0;
+    border-radius: 30px 0 0 0;
+  }
+  
+  .radar-dot {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background-color: rgba(64, 153, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(64, 153, 255, 0.7);
+  }
+  
+  .radar-target {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: rgba(255, 200, 64, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(255, 200, 64, 0.8);
+    transform: translate(-50%, -50%);
   }
   
   @keyframes sweep {
@@ -307,7 +358,7 @@
     to { transform: rotate(360deg); }
   }
   
-  /* 3D button indicators */
+  
   .button-indicator {
     position: absolute;
     right: 10px;

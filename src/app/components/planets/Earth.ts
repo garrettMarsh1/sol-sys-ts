@@ -10,10 +10,10 @@ varying vec2 vUv;
 varying vec3 vWorldPosition;
 varying vec3 vWorldNormal;
 
-void main() {
-        
-    vUv = uv;
+uniform float time;
 
+void main() {
+    vUv = vec2(uv.x + time, uv.y); 
     vec4 worldPos = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPos.xyz;
 
@@ -22,6 +22,7 @@ void main() {
 
     gl_Position = projectionMatrix * viewMatrix * worldPos;
 }
+
 
 `;
 
@@ -182,13 +183,20 @@ class Earth extends BasePlanet {
   }
 
   
+
+  
   public update(dt: number): void {
-        super.update(dt);
+    super.update(dt);
+
+        const rotationPeriodSeconds = this.rotationPeriod * 86400; 
+    const rotationSpeed = (2 * Math.PI) / rotationPeriodSeconds;
+
+    this.mesh.rotateOnAxis(new THREE.Vector3(0, 1, 0), rotationSpeed * dt);
 
         if (this.shaderMaterial.uniforms) {
-            this.shaderMaterial.uniforms.lightPos.value.set(0, 0, 0);
+        this.shaderMaterial.uniforms.lightPos.value.set(0, 0, this.distanceFromSun);
     }
-  }
+}
 }
 
 export default Earth;

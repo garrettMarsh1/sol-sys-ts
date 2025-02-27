@@ -5,7 +5,8 @@ import HolographicMiniMap from "./MiniMap";
 import "./GameUI.css";
 import "./3d-additional-styles.css"
 import "./3d-cockpit.css"
-
+import "./HolographicButtons.css"
+import "./HolographicUi.css"
 interface GameHUDProps {
   currentPlanet: any | null;
   cameraPosition: { x: number; y: number; z: number };
@@ -739,7 +740,7 @@ const GameHUD: React.FC<GameHUDProps> = ({
         
       >
         {}
-        {/* <CockpitFrame cameraVelocity={cameraVelocity} /> */}
+        {}
 
         {}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
